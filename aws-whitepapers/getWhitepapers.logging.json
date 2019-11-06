@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "brief": {
+      "format": "%(msg)s"
+    },
+    "context": {
+      "format": "%(levelname)-6s %(name)-12s %(message)s"
+    },
+    "NoExceptionFormatter":
+    {
+      "()": "logger.NoExceptionFormatter"
+    }
+  },
+  "handlers": {
+    "output-file": {
+      "level": "INFO",
+      "class": "logging.FileHandler",
+      "formatter": "context",
+      "filename": "..\\logs\\getWhitepapers.output.log",
+      "mode": "w",
+      "encoding": "utf-8"
+    },
+    "debug-file": {
+      "level": "DEBUG",
+      "class": "logging.FileHandler",
+      "formatter": "context",
+      "filename": "..\\logs\\getWhitepapers.debug.log",
+      "mode": "w",
+      "encoding": "utf-8"
+    },
+    "console": {
+      "level": "INFO",
+      "class": "logging.StreamHandler",
+      "formatter": "NoExceptionFormatter",
+      "stream": "ext://sys.stdout"
+    }
+  },
+  "loggers": {
+    "": {
+      "level": "DEBUG",
+      "handlers": [
+        "console",
+        "debug-file",
+        "output-file"
+      ]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "remote": {
+    "urlLoc": "https://aws.amazon.com/api/dirs/items/search",
+    "urlParameters": {
+      "item.directoryId": "whitepapers",
+      "sort_by": "item.additionalFields.sortDate",
+      "sort_order": "desc",
+      "size": "15",
+      "item.locale": "en_US"
+    }
+  },
+  "local": {
+    "localPath": "..\\output"
+  },
+  "listCache": {
+    "localPath": "..\\cache",
+    "age": "21600"
+  }
+}
