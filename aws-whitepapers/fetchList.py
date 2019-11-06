@@ -11,7 +11,7 @@ from urllib import parse
 from urllib3 import exceptions
 
 from common import Record, Changed, Result, url_client, local_tz
-from paths import remove_filename_invalid_characters
+from paths import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,7 @@ class FetchItemList(object):
         def build_filename(filename, date_published, url):
             path = parse.urlparse(url).path
             loc = path.rfind('.')
-            filename = '%s - (%s)' % (remove_filename_invalid_characters(filename),
-            date_published.strftime('%Y-%m'))
+            filename = '%s - (%s)' % (sanitize_filename(filename), date_published.strftime('%Y-%m'))
             return (filename + path[loc:]) if loc >= 0 else filename
 
         logger.info('process list')
