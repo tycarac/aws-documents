@@ -28,7 +28,7 @@ def export_results(records, paths):
         for r in records:
             csv_writer.writerow(
                 [r.name, r.title, r.category, r.contentType, r.description,
-                    r.dateCreated, r.dateUpdated, r.datePublished, r.dateTimeCreated, r.dateTimeUpdated,
+                    r.dateCreated, r.dateUpdated, r.datePublished, r.dateSort, r.dateTimeCreated, r.dateTimeUpdated,
                     r.url, r.filename, r.filepath, r.changed, r.result])
 
 

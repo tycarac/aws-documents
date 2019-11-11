@@ -136,7 +136,7 @@ class FetchItem(object):
             elif local_file_path not in file_paths:
                 logger.info('- Extra file: "%s"' % local_file_path.relative_to(fetch_base_local_path))
                 records.append(Record(None, None, None, None, None,
-                    None, None, None, None, None,
+                    None, None, None, None, None, None,
                     None, local_file_path.name, local_file_path, Changed.removed, Result.warning))
                 local_file_path.unlink()
 

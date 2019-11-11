@@ -60,16 +60,18 @@ class FetchItemList(object):
                 date_time_created = dateutil.parser.parse(item['dateCreated'])
                 date_time_updated = dateutil.parser.parse(item['dateUpdated'])
                 date_published = datetime.date(dateutil.parser.parse(adfields['datePublished']))
+                date_sort = datetime.date(dateutil.parser.parse(adfields['sortDate']))
                 date_created = datetime.date(date_time_created)
                 date_updated = datetime.date(date_time_updated)
 
                 # Extract paths
                 url = adfields['primaryURL'].split('?')[0]
-                filename = build_filename(title, date_published, url)
+                # filename = build_filename(title, date_published, url)
+                filename = build_filename(title, date_sort, url)
                 rel_filepath = Path(content_type, filename) if category else None
 
                 records.append(Record(name, title, category, content_type, desc,
-                    date_created, date_updated, date_published, date_time_created, date_time_updated,
+                    date_created, date_updated, date_published, date_sort, date_time_created, date_time_updated,
                     url, filename, rel_filepath, Changed.nil, Result.nil))
 
         logger.info('Number items: %d' % len(records))
