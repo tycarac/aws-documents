@@ -16,18 +16,20 @@
   "handlers": {
     "output-file": {
       "level": "INFO",
-      "class": "logging.FileHandler",
+      "class": "logging.handlers.RotatingFileHandler",
       "formatter": "context",
       "filename": "..\\logs\\getWhitepapers.output.log",
       "mode": "w",
+      "backupCount": 5,
       "encoding": "utf-8"
     },
     "debug-file": {
       "level": "DEBUG",
-      "class": "logging.FileHandler",
+      "class": "logging.handlers.RotatingFileHandler",
       "formatter": "context",
       "filename": "..\\logs\\getWhitepapers.debug.log",
       "mode": "w",
+      "backupCount": 5,
       "encoding": "utf-8"
     },
     "console": {

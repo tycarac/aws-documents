@@ -35,11 +35,11 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def process_list(self, list_pages):
-        def build_filename(filename, date_published, url):
+        def build_filename(fname, fdate, url):
             path = parse.urlparse(url).path
             loc = path.rfind('.')
-            filename = '%s - (%s)' % (sanitize_filename(filename), date_published.strftime('%Y-%m'))
-            return (filename + path[loc:]) if loc >= 0 else filename
+            fname = '%s - (%s)' % (sanitize_filename(fname), fdate.strftime('%Y-%m'))
+            return (fname + path[loc:]) if loc >= 0 else fname
 
         logger.info('process list')
         records = []
@@ -50,20 +50,27 @@ class FetchItemList(object):
                 name = item['name']
                 title = adfields['docTitle']
                 category = m.group(1).lower() if (m := category_re.search(adfields['description'])) else None
+                content_type = adfields['contentType']
+
+                # Extract text up to HTML tag from "description" and normalize whitespacing
                 desc = m.group(1) if (m := desc_re.search(adfields['description'])) else None
                 desc = ' '.join(desc.split())
-                content_type = adfields['contentType']
+
+                # Derive date from datetime and not from JSON data file
                 date_time_created = dateutil.parser.parse(item['dateCreated'])
                 date_time_updated = dateutil.parser.parse(item['dateUpdated'])
-                date_published = dateutil.parser.parse(adfields['datePublished'])
+                date_published = datetime.date(dateutil.parser.parse(adfields['datePublished']))
+                date_created = datetime.date(date_time_created)
+                date_updated = datetime.date(date_time_updated)
+
+                # Extract paths
                 url = adfields['primaryURL'].split('?')[0]
                 filename = build_filename(title, date_published, url)
                 rel_filepath = Path(content_type, filename) if category else None
 
                 records.append(Record(name, title, category, content_type, desc,
-                    date_time_created.strftime('%Y-%m-%d'), date_time_updated.strftime('%Y-%m-%d'), date_published,
-                    date_time_created, date_time_updated, url, filename, rel_filepath,
-                    Changed.nil, Result.nil))
+                    date_created, date_updated, date_published, date_time_created, date_time_updated,
+                    url, filename, rel_filepath, Changed.nil, Result.nil))
 
         logger.info('Number items: %d' % len(records))
         return records

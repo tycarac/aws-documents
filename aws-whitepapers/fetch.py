@@ -8,7 +8,7 @@ import pytz
 from io import StringIO
 import shutil
 import time
-from typing import Sequence
+from typing import List
 import urllib3
 
 from common import Record, Changed, Result, url_client, local_tz
@@ -26,9 +26,7 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     @staticmethod
-    def __report_output(records: Sequence[Record]):
-        srt_rec = sorted(records, key=lambda x: x.dateUpdated, reverse=True)
-
+    def __report_output(records: List[Record]):
         with StringIO() as buf:
             counter_changed = Counter(map(lambda r: r.changed, records))
             counter_result = Counter(map(lambda r: r.result, records))
@@ -46,15 +44,14 @@ class FetchItem(object):
             return buf.getvalue()
 
     # _____________________________________________________________________________
-    def __fetch(self, records: Sequence[Record]):
+    def __fetch(self, records: List[Record]):
         logger.debug('__fetch')
         counter = IncCounter()
 
-        recrod_docs = list(filter(lambda r: r.category in ['pdf'], records))
+        record_docs = list(filter(lambda r: r.category in ['pdf'], records))
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_entry = {executor.submit(self.__fetch_item, rec, counter.inc_value) for rec in recrod_docs}
+            future_entry = {executor.submit(self.__fetch_item, rec, counter.inc_value) for rec in record_docs}
             for future in concurrent.futures.as_completed(future_entry):
-                f = future
                 record, id = future.result()
 
     # _____________________________________________________________________________
@@ -86,7 +83,7 @@ class FetchItem(object):
         try:
             fetch_base_local_path = self._paths['fetchBaseLocalPath']
             rel_path = record.filepath.relative_to(fetch_base_local_path)
-            logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path))
+            logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path.parent))
             logger.debug('> %4d GET:        %s' % (id, record.url))
 
             rsp = None
@@ -94,7 +91,7 @@ class FetchItem(object):
                 rsp = url_client.request('GET', record.url, preload_content=False)
                 logger.debug('> %4d resp code:  %d' % (id, rsp.status))
                 if rsp.status == 200:
-                    logger.info('> %4d Write:      "%s"' % (id, record.filename))
+                    logger.debug('> %4d Write:      "%s"' % (id, record.filename))
                     with record.filepath.open('wb', buffering=2**18) as rfp:
                         shutil.copyfileobj(rsp, rfp)
                     record.changed = Changed.updated if is_file_exists else Changed.created
@@ -117,13 +114,15 @@ class FetchItem(object):
         return record, id
 
     # _____________________________________________________________________________
-    def __remove_unwanted_files(self, records: Sequence[Record]):
+    def __remove_unwanted_files(self, records: List[Record]):
         logger.debug('__delete_bad_documents')
         fetch_base_local_path = self._paths['fetchBaseLocalPath']
         fetch_local_path = self._paths['fetchLocalPath']
 
+        # Derive filepaths from records and local directory
+        file_paths = sorted({r.filepath: r for r in records})
         local_file_paths = sorted(fetch_local_path.glob('**/*.*'))
-        file_paths = {r.filepath: r for r in records}
+        logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(file_paths))
 
         # Check for extra or empty files
         for local_file_path in local_file_paths:
@@ -136,6 +135,9 @@ class FetchItem(object):
                     fp.result = Result.warning
             elif local_file_path not in file_paths:
                 logger.info('- Extra file: "%s"' % local_file_path.relative_to(fetch_base_local_path))
+                records.append(Record(None, None, None, None, None,
+                    None, None, None, None, None,
+                    None, local_file_path.name, local_file_path, Changed.removed, Result.warning))
                 local_file_path.unlink()
 
         # Delete empty folders

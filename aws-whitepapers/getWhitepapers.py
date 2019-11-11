@@ -1,7 +1,7 @@
 import csv
 from datetime import datetime, timedelta
 import json
-import logging.config
+import logging.config, logging.handlers
 import os
 from pathlib import Path
 import time
@@ -10,6 +10,8 @@ from common import Record
 from fetch import FetchItem
 from fetchList import FetchItemList
 from logger import NoExceptionFormatter
+import os
+from typing import List
 
 
 # Common variables
@@ -57,16 +59,13 @@ def derive_paths(config_settings):
 
     paths = {
         'name': Path(__file__).stem,
-
         # Fetch list
         'cacheBasePath': cache_base_path,
         'cachePath': Path(cache_base_path, name).resolve(),
         'summaryFilepath': Path(cache_path, name + '.summary.json').resolve(),
-
         # Fetch
         'fetchBaseLocalPath': fetch_base_local_path,
         'fetchLocalPath': fetch_local_path,
-
         # Report
         'reportFilePath': Path(fetch_base_local_path, name + '.csv').resolve()
     }

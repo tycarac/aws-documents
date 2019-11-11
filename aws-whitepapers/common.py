@@ -24,7 +24,7 @@ class Result(Enum):
 
 
 @dataclass()
-class Record(object):
+class Record():
     __slots__ = ['name', 'title', 'category', 'contentType', 'description', 'dateCreated', 'dateUpdated',
                 'datePublished', 'dateTimeCreated', 'dateTimeUpdated', 'url', 'filename', 'filepath',
                 'changed', 'result']
@@ -35,7 +35,7 @@ class Record(object):
     description: str
     dateCreated: date
     dateUpdated: date
-    datePublished : date
+    datePublished: date
     dateTimeCreated: datetime
     dateTimeUpdated: datetime
     url: str
