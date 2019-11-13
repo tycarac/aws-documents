@@ -12,7 +12,7 @@
   "local": {
     "localPath": "..\\output"
   },
-  "listCache": {
+  "cache": {
     "localPath": "..\\cache",
     "age": "21600"
   }

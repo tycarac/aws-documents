@@ -10,7 +10,6 @@ urllib3 = "*"
 python-dateutil = "*"
 pytz = "*"
 tzlocal = "*"
-pytest = "*"
 
 [requires]
 python_version = "3.8"

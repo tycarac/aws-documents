@@ -72,8 +72,8 @@ class FetchItem(object):
             if logger.isEnabledFor(logging.DEBUG):
                 local_ldt = local_tz.localize(datetime.fromtimestamp(record.filepath.stat().st_mtime))
                 remote_ldt = record.dateTimeUpdated.astimezone(pytz.timezone(local_tz.zone))
-                logger.debug('> %4d datetime:   local, remote, diff: %s, %s' % (id,
-                            local_ldt.strftime('%H:%M:%S %d-%b-%Y'), remote_ldt.strftime('%H:%M:%S %d-%b-%Y')))
+                logger.debug('> %4d datetime:   local, remote: %s, %s' % (id,
+                            local_ldt.strftime('%d-%b-%Y %H:%M'), remote_ldt.strftime('%d-%b-%Y %H:%M')))
             if tdiff_sec > 0:
                 record.result, record.changed = Result.success, Changed.cached
                 logger.debug('> %4d Cached:     "%s"' % (id, record.filepath.name))
@@ -81,8 +81,8 @@ class FetchItem(object):
 
         # Fetch document
         try:
-            fetch_base_local_path = self._paths['fetchBaseLocalPath']
-            rel_path = record.filepath.relative_to(fetch_base_local_path)
+            output_base_local_path = self._paths['outputBaseLocalPath']
+            rel_path = record.filepath.relative_to(output_base_local_path)
             logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path.parent))
             logger.debug('> %4d GET:        %s' % (id, record.url))
 
@@ -116,32 +116,32 @@ class FetchItem(object):
     # _____________________________________________________________________________
     def __remove_unwanted_files(self, records: List[Record]):
         logger.debug('__delete_bad_documents')
-        fetch_base_local_path = self._paths['fetchBaseLocalPath']
-        fetch_local_path = self._paths['fetchLocalPath']
+        output_base_local_path = self._paths['outputBaseLocalPath']
+        output_local_path = self._paths['outputLocalPath']
 
         # Derive filepaths from records and local directory
         file_paths = sorted({r.filepath: r for r in records})
-        local_file_paths = sorted(fetch_local_path.glob('**/*.*'))
+        local_file_paths = sorted(output_local_path.glob('**/*.*'))
         logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(file_paths))
 
         # Check for extra or empty files
         for local_file_path in local_file_paths:
             if local_file_path.stat().st_size == 0:
-                logger.info('- Empty file: "%s"' % local_file_path.relative_to(fetch_base_local_path))
+                logger.info('- Empty file: "%s"' % local_file_path.relative_to(output_base_local_path))
                 local_file_path.unlink()
                 if local_file_path in file_paths:
                     fp = file_paths[local_file_path]
                     fp.changed = Changed.removed
                     fp.result = Result.warning
             elif local_file_path not in file_paths:
-                logger.info('- Extra file: "%s"' % local_file_path.relative_to(fetch_base_local_path))
+                logger.info('- Extra file: "%s"' % local_file_path.relative_to(output_base_local_path))
                 records.append(Record(None, None, None, None, None,
                     None, None, None, None, None, None,
                     None, local_file_path.name, local_file_path, Changed.removed, Result.warning))
                 local_file_path.unlink()
 
         # Delete empty folders
-        for root, dirs, _ in os.walk(fetch_local_path, topdown=False):
+        for root, dirs, _ in os.walk(output_local_path, topdown=False):
             for dir in dirs:
                 name = os.path.join(root, dir)
                 if not len(os.listdir(name)):
@@ -150,9 +150,11 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     def process(self, records):
-        local_path = self._paths['fetchLocalPath']
+        logger.debug('process')
+        output_local_path = self._paths['outputLocalPath']
+        logger.info('Output path: %s' % output_local_path)
         for r in records:
-            r.filepath = Path(local_path, r.filepath).resolve()
+            r.filepath = Path(output_local_path, r.filepath).resolve()
         for dir in {r.filepath.parent for r in records}:
             dir.mkdir(parents=True, exist_ok=True)
 

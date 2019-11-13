@@ -47,15 +47,15 @@ def process(config_settings, paths):
 def derive_paths(config_settings):
     name = Path(__file__).stem
 
-    # Fetch list
-    list_cache_settings = config_settings['listCache']
-    cache_base_path = Path(list_cache_settings['localPath']).resolve()
+    # Cache list
+    cache_settings = config_settings['cache']
+    cache_base_path = Path(cache_settings['localPath']).resolve()
     cache_path = Path(cache_base_path, name).resolve()
 
-    # Fetch
-    download_settings = config_settings['local']
-    fetch_base_local_path = Path(download_settings['localPath']).resolve()
-    fetch_local_path = Path(fetch_base_local_path, name).resolve()
+    # Output
+    output_settings = config_settings['local']
+    output_base_local_path = Path(output_settings['localPath']).resolve()
+    output_local_path = Path(output_base_local_path, name).resolve()
 
     paths = {
         'name': Path(__file__).stem,
@@ -64,10 +64,10 @@ def derive_paths(config_settings):
         'cachePath': Path(cache_base_path, name).resolve(),
         'summaryFilepath': Path(cache_path, name + '.summary.json').resolve(),
         # Fetch
-        'fetchBaseLocalPath': fetch_base_local_path,
-        'fetchLocalPath': fetch_local_path,
+        'outputBaseLocalPath': output_base_local_path,
+        'outputLocalPath': output_local_path,
         # Report
-        'reportFilePath': Path(fetch_base_local_path, name + '.csv').resolve()
+        'reportFilePath': Path(output_base_local_path, name + '.csv').resolve()
     }
 
     return paths

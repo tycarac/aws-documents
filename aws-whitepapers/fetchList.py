@@ -30,7 +30,7 @@ class FetchItemList(object):
         self._source_url = remote_settings['urlLoc']
         self._source_parameters = remote_settings['urlParameters']
 
-        list_cache_settings = config_settings['listCache']
+        list_cache_settings = config_settings['cache']
         self._cache_age_sec = int(list_cache_settings.get('age', 300))
 
     # _____________________________________________________________________________
@@ -41,7 +41,7 @@ class FetchItemList(object):
             fname = '%s - (%s)' % (sanitize_filename(fname), fdate.strftime('%Y-%m'))
             return (fname + path[loc:]) if loc >= 0 else fname
 
-        logger.info('process list')
+        logger.debug('process list')
         records = []
         for page in list_pages:
             for grp in page['items']:
@@ -85,7 +85,7 @@ class FetchItemList(object):
 
         try:
             rsp = url_client.request('GET', self._source_url, fields=fields)
-            logger.debug('> %4d code  %d' % (page_num, rsp.status))
+            logger.debug('> %4d response status  %d' % (page_num, rsp.status))
             if rsp.status == 200:
                 # extract data
                 list_page = json.loads(rsp.data.decode('utf-8'))
@@ -143,8 +143,8 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def build_list(self):
-        logger.debug('build downloads list')
-        logger.debug('List cache path: %s' % self._paths['cachePath'])
+        logger.debug('build list')
+        logger.debug('Cache path: %s' % self._paths['cachePath'])
 
         # Test local cached age
         is_use_cache = False
