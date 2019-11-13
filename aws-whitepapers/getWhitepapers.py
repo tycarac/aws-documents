@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import json
 import logging.config, logging.handlers
 import os
@@ -10,8 +10,6 @@ from common import Record
 from fetch import FetchItem
 from fetchList import FetchItemList
 from logger import NoExceptionFormatter
-import os
-from typing import List
 
 
 # Common variables
@@ -28,7 +26,7 @@ def export_results(records, paths):
         for r in records:
             csv_writer.writerow(
                 [r.name, r.title, r.category, r.contentType, r.description,
-                    r.dateCreated, r.dateUpdated, r.datePublished, r.dateSort, r.dateTimeCreated, r.dateTimeUpdated,
+                    r.dateCreated, r.dateUpdated, r.datePublished, r.dateSort,
                     r.url, r.filename, r.filepath, r.changed, r.result])
 
 
@@ -57,6 +55,8 @@ def derive_paths(config_settings):
     output_base_local_path = Path(output_settings['localPath']).resolve()
     output_local_path = Path(output_base_local_path, name).resolve()
 
+    # Report
+    report_path = Path(cache_base_path, '%s.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve()
     paths = {
         'name': Path(__file__).stem,
         # Fetch list
@@ -67,7 +67,7 @@ def derive_paths(config_settings):
         'outputBaseLocalPath': output_base_local_path,
         'outputLocalPath': output_local_path,
         # Report
-        'reportFilePath': Path(output_base_local_path, name + '.csv').resolve()
+        'reportFilePath': report_path
     }
 
     return paths

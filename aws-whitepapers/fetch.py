@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import logging.config
 import os
 from pathlib import Path
-import pytz
 from io import StringIO
 import shutil
 import time
@@ -61,20 +60,15 @@ class FetchItem(object):
         record.result = Result.error
         record.changed = Changed.nil
 
-        # Check if file exists
+        # Check file exists and, if so, if old
         is_file_exists = record.filepath.exists()
         logger.debug('> %4d Exists:     %-5s: "%s"' % (id, is_file_exists, record.filename))
         if is_file_exists:
             # Check file age
-            local_sec = record.filepath.stat().st_mtime
-            remote_sec = record.dateTimeUpdated.timestamp()
-            tdiff_sec: float = local_sec - remote_sec
-            if logger.isEnabledFor(logging.DEBUG):
-                local_ldt = local_tz.localize(datetime.fromtimestamp(record.filepath.stat().st_mtime))
-                remote_ldt = record.dateTimeUpdated.astimezone(pytz.timezone(local_tz.zone))
-                logger.debug('> %4d datetime:   local, remote: %s, %s' % (id,
-                            local_ldt.strftime('%d-%b-%Y %H:%M'), remote_ldt.strftime('%d-%b-%Y %H:%M')))
-            if tdiff_sec > 0:
+            local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_mtime))
+            date_sort = record.dateSort
+            logger.debug('> %4d date:       local, remote: %s, %s' % (id, local_date, date_sort))
+            if local_date >= date_sort:
                 record.result, record.changed = Result.success, Changed.cached
                 logger.debug('> %4d Cached:     "%s"' % (id, record.filepath.name))
                 return record, id
@@ -136,7 +130,7 @@ class FetchItem(object):
             elif local_file_path not in file_paths:
                 logger.info('- Extra file: "%s"' % local_file_path.relative_to(output_base_local_path))
                 records.append(Record(None, None, None, None, None,
-                    None, None, None, None, None, None,
+                    None, None, None, None,
                     None, local_file_path.name, local_file_path, Changed.removed, Result.warning))
                 local_file_path.unlink()
 
