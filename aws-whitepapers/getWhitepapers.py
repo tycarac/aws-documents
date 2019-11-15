@@ -1,16 +1,18 @@
+from collections import Counter
 import csv
 from datetime import date, datetime, timedelta
+from io import StringIO
 import json
 import logging.config, logging.handlers
 import os
 from pathlib import Path
 import time
+from typing import List
 
-from common import Record
+from common import Record, Changed, Result
 from fetch import FetchItem
 from fetchList import FetchItemList
 from logger import NoExceptionFormatter
-
 
 # Common variables
 logger = logging.getLogger(__name__)
@@ -18,16 +20,42 @@ logger = logging.getLogger(__name__)
 
 # _____________________________________________________________________________
 def export_results(records, paths):
-    out_path = paths['reportFilePath']
-    logger.info('Report:        %s' % out_path)
-    with out_path.open(mode='wt', newline='') as out:
+    logger.info('export_results')
+
+    out_data_path = paths['dataFilePath']
+    with out_data_path.open(mode='wt', newline='') as out:
         csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow(Record.__slots__)
         for r in records:
             csv_writer.writerow(
-                [r.name, r.title, r.category, r.contentType, r.description,
-                    r.dateCreated, r.dateUpdated, r.datePublished, r.dateSort,
-                    r.url, r.filename, r.filepath, r.changed, r.result])
+                [r.name, r.title, r.category, r.contentType, r.description, r.dateCreated, r.dateUpdated,
+                    r.datePublished, r.dateSort, r.url, r.filename, r.filepath, r.changed.name, r.result.name])
+
+    out_report_path = paths['reportFilePath']
+    with out_report_path.open(mode='wt', newline='') as out:
+        csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
+        csv_writer.writerow(['datePublished', 'changed', 'contentType', 'filename'])
+        for r in records:
+            csv_writer.writerow([r.datePublished, r.changed.name, r.contentType, r.filename])
+
+
+# _____________________________________________________________________________
+def build_summary(records: List[Record]):
+    with StringIO() as buf:
+        counter_changed = Counter(map(lambda r: r.changed, records))
+        counter_result = Counter(map(lambda r: r.result, records))
+        buf.write('Records:    %5d\n' % len(records))
+        buf.write('- Cached:   %5d\n' % counter_changed[Changed.cached])
+        buf.write('- Created:  %5d\n' % counter_changed[Changed.created])
+        buf.write('- Updated:  %5d\n' % counter_changed[Changed.updated])
+        buf.write('- Deleted:  %5d\n' % counter_changed[Changed.deleted])
+        buf.write('- Archived: %5d\n' % counter_changed[Changed.archived])
+        buf.write('- Nil:      %5d\n' % counter_changed[Changed.nil])
+        buf.write('Results\n')
+        buf.write('- Warnings: %5d\n' % counter_result[Result.warning])
+        buf.write('- Errors:   %5d\n' % counter_result[Result.error])
+        buf.write('- Nil:      %5d\n' % counter_result[Result.nil])
+        return buf.getvalue()
 
 
 # _____________________________________________________________________________
@@ -39,6 +67,7 @@ def process(config_settings, paths):
         fd.process(records)
     finally:
         export_results(records, paths)
+        logger.info(build_summary(records))
 
 
 # _____________________________________________________________________________
@@ -64,7 +93,8 @@ def derive_paths(config_settings):
         'outputBaseLocalPath': output_base_local_path,
         'outputLocalPath': Path(output_base_local_path, name).resolve(),
         # Report
-        'reportFilePath': Path(cache_base_path, '%s.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve(),
+        'dataFilePath': Path(cache_base_path, '%s.data.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve(),
+        'reportFilePath': Path(cache_base_path, '%s.report.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve(),
         # Archive
         'archivePath': output_local_path.joinpath(output_settings['archiveName']).resolve()
     }

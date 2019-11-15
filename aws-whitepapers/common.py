@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from datetime import date, datetime
+from datetime import date
 import tzlocal
 from pathlib import Path
 import urllib3

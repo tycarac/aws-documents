@@ -1,10 +1,8 @@
 import concurrent.futures
-from collections import Counter
 from datetime import datetime, timedelta
 import logging.config
 import os
 from pathlib import Path
-from io import StringIO
 import shutil
 import time
 from typing import List
@@ -22,25 +20,6 @@ class FetchItem(object):
     # _____________________________________________________________________________
     def __init__(self, config_settings, paths):
         self._paths = paths
-
-    # _____________________________________________________________________________
-    @staticmethod
-    def __report_output(records: List[Record]):
-        with StringIO() as buf:
-            counter_changed = Counter(map(lambda r: r.changed, records))
-            counter_result = Counter(map(lambda r: r.result, records))
-            buf.write('Records:    %5d\n' % len(records))
-            buf.write('- Cached:   %5d\n' % counter_changed[Changed.cached])
-            buf.write('- Created:  %5d\n' % counter_changed[Changed.created])
-            buf.write('- Updated:  %5d\n' % counter_changed[Changed.updated])
-            buf.write('- Deleted:  %5d\n' % counter_changed[Changed.deleted])
-            buf.write('- Archived:  %5d\n' % counter_changed[Changed.archived])
-            buf.write('- Nil:      %5d\n' % counter_changed[Changed.nil])
-            buf.write('Results\n')
-            buf.write('- Warnings: %5d\n' % counter_result[Result.warning])
-            buf.write('- Errors:   %5d\n' % counter_result[Result.error])
-            buf.write('- Nil:      %5d\n' % counter_result[Result.nil])
-            return buf.getvalue()
 
     # _____________________________________________________________________________
     def __fetch(self, records: List[Record]):
@@ -164,9 +143,6 @@ class FetchItem(object):
         for dir in {r.filepath.parent for r in records}:
             dir.mkdir(parents=True, exist_ok=True)
 
-        try:
-            self.__fetch(records)
-            self.__remove_unwanted_files(records)
-        finally:
-            logger.info(self.__report_output(records))
+        self.__fetch(records)
+        self.__remove_unwanted_files(records)
 
