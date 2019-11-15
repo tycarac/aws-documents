@@ -10,7 +10,8 @@
     }
   },
   "local": {
-    "localPath": "..\\output"
+    "localPath": "..\\output",
+    "archiveName": "Archive"
   },
   "cache": {
     "localPath": "..\\cache",

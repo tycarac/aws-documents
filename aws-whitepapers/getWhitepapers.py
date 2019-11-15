@@ -45,29 +45,28 @@ def process(config_settings, paths):
 def derive_paths(config_settings):
     name = Path(__file__).stem
 
-    # Cache list
+    # Initialize
     cache_settings = config_settings['cache']
     cache_base_path = Path(cache_settings['localPath']).resolve()
     cache_path = Path(cache_base_path, name).resolve()
 
-    # Output
     output_settings = config_settings['local']
     output_base_local_path = Path(output_settings['localPath']).resolve()
     output_local_path = Path(output_base_local_path, name).resolve()
 
-    # Report
-    report_path = Path(cache_base_path, '%s.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve()
     paths = {
         'name': Path(__file__).stem,
-        # Fetch list
+        # Cache
         'cacheBasePath': cache_base_path,
         'cachePath': Path(cache_base_path, name).resolve(),
         'summaryFilepath': Path(cache_path, name + '.summary.json').resolve(),
-        # Fetch
+        # Output
         'outputBaseLocalPath': output_base_local_path,
-        'outputLocalPath': output_local_path,
+        'outputLocalPath': Path(output_base_local_path, name).resolve(),
         # Report
-        'reportFilePath': report_path
+        'reportFilePath': Path(cache_base_path, '%s.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve(),
+        # Archive
+        'archivePath': output_local_path.joinpath(output_settings['archiveName']).resolve()
     }
 
     return paths

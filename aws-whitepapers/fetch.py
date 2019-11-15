@@ -10,7 +10,7 @@ import time
 from typing import List
 import urllib3
 
-from common import Record, Changed, Result, url_client, local_tz
+from common import Record, Changed, Result, url_client
 from incCounter import IncCounter
 
 logger = logging.getLogger(__name__)
@@ -33,8 +33,8 @@ class FetchItem(object):
             buf.write('- Cached:   %5d\n' % counter_changed[Changed.cached])
             buf.write('- Created:  %5d\n' % counter_changed[Changed.created])
             buf.write('- Updated:  %5d\n' % counter_changed[Changed.updated])
-            buf.write('- Removed:  %5d\n' % counter_changed[Changed.removed])
             buf.write('- Deleted:  %5d\n' % counter_changed[Changed.deleted])
+            buf.write('- Archived:  %5d\n' % counter_changed[Changed.archived])
             buf.write('- Nil:      %5d\n' % counter_changed[Changed.nil])
             buf.write('Results\n')
             buf.write('- Warnings: %5d\n' % counter_result[Result.warning])
@@ -114,32 +114,44 @@ class FetchItem(object):
         output_local_path = self._paths['outputLocalPath']
 
         # Derive filepaths from records and local directory
-        file_paths = sorted({r.filepath: r for r in records})
+        record_file_paths = sorted({r.filepath: r for r in records})
         local_file_paths = sorted(output_local_path.glob('**/*.*'))
-        logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(file_paths))
+        archive_file_path = self._paths['archivePath']
+        archive_file_paths = []
+        logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(record_file_paths))
 
         # Check for extra or empty files
         for local_file_path in local_file_paths:
             if local_file_path.stat().st_size == 0:
-                logger.info('- Empty file: "%s"' % local_file_path.relative_to(output_base_local_path))
-                local_file_path.unlink()
-                if local_file_path in file_paths:
-                    fp = file_paths[local_file_path]
-                    fp.changed = Changed.removed
+                logger.info('- Delete empty file: "%s"' % local_file_path.relative_to(output_base_local_path))
+                os.remove(local_file_path)
+                if local_file_path in record_file_paths:
+                    fp = record_file_paths[local_file_path]
+                    fp.changed = Changed.deleted
                     fp.result = Result.warning
-            elif local_file_path not in file_paths:
-                logger.info('- Extra file: "%s"' % local_file_path.relative_to(output_base_local_path))
-                records.append(Record(None, None, None, None, None,
-                    None, None, None, None,
-                    None, local_file_path.name, local_file_path, Changed.removed, Result.warning))
-                local_file_path.unlink()
+            elif local_file_path not in record_file_paths \
+                        and not str(local_file_path).startswith(str(archive_file_path)):
+                archive_file_paths.append(local_file_path)
+
+        # Archive files
+        if archive_file_paths:
+            archive_file_path.mkdir(parents=True, exist_ok=True)
+            for file_path in archive_file_paths:
+                logger.info('- Archive file: "%s"' % file_path.relative_to(output_base_local_path))
+                records.append(Record(None, None, None, None, None, None, None, None, None, None,
+                            file_path.name, file_path, Changed.archived, Result.warning))
+                try:
+                    # Move file to archive
+                    os.replace(file_path, Path(archive_file_path, file_path.name))
+                except OSError as ex:
+                    logger.exception('Cannot archive file: %s', file_path)
 
         # Delete empty folders
         for root, dirs, _ in os.walk(output_local_path, topdown=False):
             for dir in dirs:
                 name = os.path.join(root, dir)
                 if not len(os.listdir(name)):
-                    logger.info('- Empty dir:  "%s"' % dir)
+                    logger.info('- Delete empty dir:  "%s"' % dir)
                     os.rmdir(name)
 
     # _____________________________________________________________________________

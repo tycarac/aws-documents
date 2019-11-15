@@ -13,7 +13,7 @@ class Changed(Enum):
     created = 'Created',
     updated = 'Updated',
     deleted = 'Deleted',
-    removed = 'Removed'
+    archived = 'Archived'
 
 
 class Result(Enum):
