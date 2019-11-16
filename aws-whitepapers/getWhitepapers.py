@@ -67,7 +67,7 @@ def process(config_settings, paths):
         fd.process(records)
     finally:
         export_results(records, paths)
-        logger.info(build_summary(records))
+        logger.info('\n' + build_summary(records))
 
 
 # _____________________________________________________________________________

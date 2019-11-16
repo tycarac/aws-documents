@@ -87,8 +87,8 @@ class FetchItem(object):
         return record, id
 
     # _____________________________________________________________________________
-    def __remove_unwanted_files(self, records: List[Record]):
-        logger.debug('__delete_bad_documents')
+    def __delete_unwanted_files(self, records: List[Record]):
+        logger.debug('__delete_unwanted_files')
         output_base_local_path = self._paths['outputBaseLocalPath']
         output_local_path = self._paths['outputLocalPath']
 
@@ -125,12 +125,15 @@ class FetchItem(object):
                 except OSError as ex:
                     logger.exception('Cannot archive file: %s', file_path)
 
-        # Delete empty folders
-        for root, dirs, _ in os.walk(output_local_path, topdown=False):
+    # _____________________________________________________________________________
+    @staticmethod
+    def __delete_empty_directories(parent_dir):
+        logger.debug('__delete_empty_directories')
+        for root, dirs, _ in os.walk(parent_dir, topdown=False):
             for dir in dirs:
                 name = os.path.join(root, dir)
                 if not len(os.listdir(name)):
-                    logger.info('- Delete empty dir:  "%s"' % dir)
+                    logger.info('- Delete empty dir:  "%s"' % name)
                     os.rmdir(name)
 
     # _____________________________________________________________________________
@@ -144,5 +147,5 @@ class FetchItem(object):
             dir.mkdir(parents=True, exist_ok=True)
 
         self.__fetch(records)
-        self.__remove_unwanted_files(records)
-
+        self.__delete_unwanted_files(records)
+        self.__delete_empty_directories(output_local_path)
