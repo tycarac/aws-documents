@@ -12,6 +12,7 @@ from common import Record, Changed, Result, url_client
 from incCounter import IncCounter
 
 logger = logging.getLogger(__name__)
+buffer_size = 1024 * 1024
 
 
 # _____________________________________________________________________________
@@ -35,7 +36,6 @@ class FetchItem(object):
     # _____________________________________________________________________________
     def __fetch_item(self, record: Record, id):
         logger.debug('> %4d __fetch_item' % id)
-        start_time = time.time()
         record.result = Result.error
         record.changed = Changed.nil
 
@@ -52,7 +52,11 @@ class FetchItem(object):
                 logger.debug('> %4d Cached:     "%s"' % (id, record.filepath.name))
                 return record, id
 
-        # Fetch document
+        self.__fetch_file(record, is_file_exists, id)
+        return record, id
+
+    # _____________________________________________________________________________
+    def __fetch_file(self, record:Record, is_file_exists, id):
         try:
             output_base_local_path = self._paths['outputBaseLocalPath']
             rel_path = record.filepath.relative_to(output_base_local_path)
@@ -61,16 +65,25 @@ class FetchItem(object):
 
             rsp = None
             try:
+                pub_timestamp = time.mktime(record.datePublished.timetuple())
+                file_path_str = str(record.filepath)
+                start_time = time.time()
                 rsp = url_client.request('GET', record.url, preload_content=False)
                 logger.debug('> %4d resp code:  %d' % (id, rsp.status))
                 if rsp.status == 200:
+                    # Fetch
                     logger.debug('> %4d Write:      "%s"' % (id, record.filename))
-                    with record.filepath.open('wb', buffering=2**18) as rfp:
-                        shutil.copyfileobj(rsp, rfp)
+                    with record.filepath.open('wb', buffering=buffer_size) as rfp:
+                        shutil.copyfileobj(rsp, rfp, length=buffer_size)
+                    os.utime(file_path_str, (pub_timestamp, pub_timestamp))
+                    fetch_time = time.time() - start_time
                     record.changed = Changed.updated if is_file_exists else Changed.created
                     record.result = Result.success
-                    mins, secs = divmod(timedelta(seconds=time.time() - start_time).total_seconds(), 60)
-                    logger.debug('> %4d Run time: %02d:%02d, File size %d' % (id, mins, secs, record.filepath.stat().st_size))
+
+                    # Log
+                    bytes = record.filepath.stat().st_size
+                    fs_str = str(bytes) if bytes <= 10000 else str(bytes // 1024) + 'k'
+                    logger.debug('> %4d Fetch time: %.2fs, File size %s' % (id, fetch_time, fs_str))
                 else:
                     logger.error('> %4d HTTP code:  %d' % (id, rsp.status))
                     if is_file_exists:
@@ -84,7 +97,6 @@ class FetchItem(object):
                     rsp.release_conn()
         except Exception as ex:
             logger.exception('> %4d Generic exception' % id)
-        return record, id
 
     # _____________________________________________________________________________
     def __delete_unwanted_files(self, records: List[Record]):
