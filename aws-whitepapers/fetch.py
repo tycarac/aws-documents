@@ -100,6 +100,7 @@ class FetchItem(object):
         logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(record_file_paths))
 
         # Check for extra or empty files
+        archive_fp = str(archive_file_path)
         for local_file_path in local_file_paths:
             if local_file_path.stat().st_size == 0:
                 logger.info('- Delete empty file: "%s"' % local_file_path.relative_to(output_base_local_path))
@@ -108,8 +109,7 @@ class FetchItem(object):
                     fp = record_file_paths[local_file_path]
                     fp.changed = Changed.deleted
                     fp.result = Result.warning
-            elif local_file_path not in record_file_paths \
-                        and not str(local_file_path).startswith(str(archive_file_path)):
+            elif local_file_path not in record_file_paths and not str(local_file_path).startswith(archive_fp):
                 archive_file_paths.append(local_file_path)
 
         # Archive files
