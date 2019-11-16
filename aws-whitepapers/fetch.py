@@ -44,7 +44,7 @@ class FetchItem(object):
         logger.debug('> %4d Exists:     %-5s: "%s"' % (id, is_file_exists, record.filename))
         if is_file_exists:
             # Check file age
-            local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_mtime))
+            local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime))
             date_sort = record.dateSort
             logger.debug('> %4d date:       local, remote: %s, %s' % (id, local_date, date_sort))
             if local_date >= date_sort:
