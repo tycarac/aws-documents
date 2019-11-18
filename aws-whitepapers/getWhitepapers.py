@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # _____________________________________________________________________________
 def export_results(records, paths):
-    logger.info('export_results')
+    logger.debug('export_results')
 
     out_data_path = paths['dataFilePath']
     with out_data_path.open(mode='wt', newline='') as out:

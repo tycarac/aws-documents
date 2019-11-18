@@ -63,38 +63,39 @@ class FetchItem(object):
             logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path.parent))
             logger.debug('> %4d GET:        %s' % (id, record.url))
 
+            pub_timestamp = time.mktime(record.datePublished.timetuple())
+            file_path_str = str(record.filepath)
+
+            # Fetch.  Must call release_conn() after file copied but opening/writing exception is possible
             rsp = None
+            start_time = time.time()
             try:
-                pub_timestamp = time.mktime(record.datePublished.timetuple())
-                file_path_str = str(record.filepath)
-                start_time = time.time()
                 rsp = url_client.request('GET', record.url, preload_content=False)
                 logger.debug('> %4d resp code:  %d' % (id, rsp.status))
                 if rsp.status == 200:
-                    # Fetch
                     logger.debug('> %4d Write:      "%s"' % (id, record.filename))
                     with record.filepath.open('wb', buffering=buffer_size) as rfp:
                         shutil.copyfileobj(rsp, rfp, length=buffer_size)
-                    os.utime(file_path_str, (pub_timestamp, pub_timestamp))
-                    fetch_time = time.time() - start_time
-                    record.changed = Changed.updated if is_file_exists else Changed.created
-                    record.result = Result.success
-
-                    # Log
-                    bytes = record.filepath.stat().st_size
-                    fs_str = str(bytes) if bytes <= 10000 else str(bytes // 1024) + 'k'
-                    logger.debug('> %4d Fetch time: %.2fs, File size %s' % (id, fetch_time, fs_str))
-                else:
-                    logger.error('> %4d HTTP code:  %d' % (id, rsp.status))
-                    if is_file_exists:
-                        record.filepath.unlink()
-                        logger.debug('> %4d Deleting:   "%s"' % (id, rel_path))
-                        record.changed = Changed.deleted
+                record.changed = Changed.updated if is_file_exists else Changed.created
+                record.result = Result.success
             except urllib3.exceptions.HTTPError as ex:
                 logger.exception('> %4d HTTP error' % id)
             finally:
+                fetch_time = time.time() - start_time
                 if rsp:
                     rsp.release_conn()
+
+            if record.result == Result.success:
+                os.utime(file_path_str, (pub_timestamp, pub_timestamp))
+                file_size = record.filepath.stat().st_size
+                fs_str = str(bytes) if file_size <= 10000 else str(file_size // 1024) + 'k'
+                logger.debug('> %4d Fetch time: %.2fs, File size %s' % (id, fetch_time, fs_str))
+            else:
+                logger.error('> %4d HTTP code:  %d' % (id, rsp.status))
+                if record.filepath.exists():
+                    record.filepath.unlink()
+                    logger.debug('> %4d Deleting:   "%s"' % (id, rel_path))
+                    record.changed = Changed.deleted
         except Exception as ex:
             logger.exception('> %4d Generic exception' % id)
 
