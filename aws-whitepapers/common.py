@@ -46,7 +46,7 @@ class Record():
 
 # URL variables
 url_headers = urllib3.make_headers(keep_alive=True, accept_encoding=True)
-url_retries = urllib3.Retry(total=2, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
+url_retries = urllib3.Retry(total=3, backoff_factor=5, status_forcelist=[500, 502, 503, 504])
 url_client = urllib3.PoolManager(timeout=urllib3.Timeout(total=15.0), retries=url_retries, block=True,
                                  headers=url_headers)
 
