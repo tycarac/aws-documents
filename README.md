@@ -1,7 +1,7 @@
-# AWS-Whitepapers
+# AWS-Documents
 
 ## Introduction
-Downloads AWS whitepapers from AWS documentation website.
+Downloads AWS documents, currently whitepapers, from AWS documentation website.
 
 ## Usage
 Requires Python 3.8.x and libraries:
