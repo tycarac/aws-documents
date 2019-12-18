@@ -9,6 +9,7 @@ from typing import List
 import urllib3
 
 from common import Record, Changed, Result, url_client
+from appPaths import AppPaths
 from incCounter import IncCounter
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ buffer_size = 1024 * 1024
 class FetchItem(object):
 
     # _____________________________________________________________________________
-    def __init__(self, config_settings, paths):
+    def __init__(self, paths: AppPaths):
         self._paths = paths
 
     # _____________________________________________________________________________
@@ -56,9 +57,9 @@ class FetchItem(object):
         return record, id
 
     # _____________________________________________________________________________
-    def __fetch_file(self, record:Record, is_file_exists, id):
+    def __fetch_file(self, record: Record, is_file_exists, id):
         try:
-            output_base_local_path = self._paths['outputBaseLocalPath']
+            output_base_local_path = self._paths.output_base_local_path
             rel_path = record.filepath.relative_to(output_base_local_path)
             logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path.parent))
             logger.debug('> %4d GET:        %s' % (id, record.url))
@@ -102,21 +103,20 @@ class FetchItem(object):
     # _____________________________________________________________________________
     def __delete_unwanted_files(self, records: List[Record]):
         logger.debug('__delete_unwanted_files')
-        output_base_local_path = self._paths['outputBaseLocalPath']
-        output_local_path = self._paths['outputLocalPath']
 
-        # Derive filepaths from records and local directory
+        # Derive file paths from records and local directory
         record_file_paths = sorted({r.filepath: r for r in records})
-        local_file_paths = sorted(output_local_path.glob('**/*.*'))
-        archive_file_path = self._paths['archivePath']
+        local_file_paths = sorted(self._paths.output_local_path.glob('**/*.*'))
+        archive_file_path = self._paths.archive_path
         archive_file_paths = []
         logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(record_file_paths))
 
         # Check for extra or empty files
-        archive_fp = str(archive_file_path)
+        archive_fp = str(self._paths.archive_path)
         for local_file_path in local_file_paths:
             if local_file_path.stat().st_size == 0:
-                logger.info('- Delete empty file: "%s"' % local_file_path.relative_to(output_base_local_path))
+                logger.info('- Delete empty file: "%s"'
+                            % local_file_path.relative_to(self._paths.output_base_local_path))
                 os.remove(local_file_path)
                 if local_file_path in record_file_paths:
                     fp = record_file_paths[local_file_path]
@@ -127,11 +127,11 @@ class FetchItem(object):
 
         # Archive files
         if archive_file_paths:
-            archive_file_path.mkdir(parents=True, exist_ok=True)
+            self._paths.archive_path.mkdir(parents=True, exist_ok=True)
             for file_path in archive_file_paths:
-                logger.info('- Archive file: "%s"' % file_path.relative_to(output_base_local_path))
+                logger.info('- Archive file: "%s"' % file_path.relative_to(self._paths.output_base_local_path))
                 records.append(Record(None, None, None, None, None, None, None, None, None, None,
-                            file_path.name, file_path, Changed.archived, Result.warning))
+                    file_path.name, file_path, Changed.archived, Result.warning))
                 try:
                     # Move file to archive
                     os.replace(file_path, Path(archive_file_path, file_path.name))
@@ -152,13 +152,13 @@ class FetchItem(object):
     # _____________________________________________________________________________
     def process(self, records):
         logger.debug('process')
-        output_local_path = self._paths['outputLocalPath']
-        logger.info('Output path: %s' % output_local_path)
+        logger.info('Output path: %s' % self._paths.output_local_path)
+
         for r in records:
-            r.filepath = Path(output_local_path, r.filepath).resolve()
+            r.filepath = Path(self._paths.output_local_path, r.filepath).resolve()
         for dir in {r.filepath.parent for r in records}:
             dir.mkdir(parents=True, exist_ok=True)
 
         self.__fetch(records)
         self.__delete_unwanted_files(records)
-        self.__delete_empty_directories(output_local_path)
+        self.__delete_empty_directories(self._paths.output_local_path)

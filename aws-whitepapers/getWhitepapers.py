@@ -1,14 +1,16 @@
 from collections import Counter
 import csv
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from io import StringIO
 import json
 import logging.config, logging.handlers
+from operator import attrgetter
 import os
 from pathlib import Path
 import time
 from typing import List
 
+from appPaths import AppPaths
 from common import Record, Changed, Result
 from fetch import FetchItem
 from fetchList import FetchItemList
@@ -19,24 +21,54 @@ logger = logging.getLogger(__name__)
 
 
 # _____________________________________________________________________________
-def export_results(records, paths):
+def export_results(records: List[Record], paths: AppPaths):
     logger.debug('export_results')
 
-    out_data_path = paths['dataFilePath']
-    with out_data_path.open(mode='wt', newline='') as out:
-        csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(Record.__slots__)
-        for r in records:
-            csv_writer.writerow(
-                [r.name, r.title, r.category, r.contentType, r.description, r.dateCreated, r.dateUpdated,
-                    r.datePublished, r.dateSort, r.url, r.filename, r.filepath, r.changed.name, r.result.name])
+    results_path = paths.data_file_path
+    out_report_path = paths.report_file_path
 
-    out_report_path = paths['reportFilePath']
-    with out_report_path.open(mode='wt', newline='') as out:
-        csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['datePublished', 'changed', 'contentType', 'filename'])
-        for r in records:
-            csv_writer.writerow([r.datePublished, r.changed.name, r.contentType, r.filename])
+    # Read and update
+    has_existing_results = results_path.exists() and results_path.stat().st_size > 0
+    if has_existing_results:
+        with results_path.open(mode='r', newline='') as rp:
+            csv_reader = csv.reader(rp)
+            next(csv_reader, None)  # skip csv header
+            rows = {rec.filename: rec for rec in [Record.from_string(rec) for rec in csv_reader]}
+        for rec in records:
+            if rec.changed != Changed.cached or rec.result != Result.success:
+                logger.debug('Rec org|new: %s | %s' % (rows.get('filename', ''), rec))
+                rows['filename'] = rec
+        results = rows.values()
+    else:
+        results = records
+    sorted(results, key=attrgetter('contentType', 'datePublished', 'filename'))
+
+    # Write
+    try:
+        try:
+            results_path.with_suffix('.bak.csv').write_text(results_path.read_text())
+        except Exception as ex:
+            logger.exception('Error backing up data file')
+        with results_path.open(mode='w', newline='') as out:
+            csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(Record.__slots__)
+            for r in results:
+                csv_writer.writerow(
+                    [r.name, r.title, r.category, r.contentType, r.description, r.dateCreated, r.dateUpdated,
+                        r.datePublished, r.dateSort, r.url, r.filename, r.filepath, r.changed.name, r.result.name])
+
+        try:
+            out_report_path.with_suffix('.bak.csv').write_text(out_report_path.read_text())
+        except Exception as ex:
+            logger.exception('Error backing up data file')
+        with out_report_path.open(mode='w', newline='') as out:
+            csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(['datePublished', 'changed', 'contentType', 'filename'])
+            for r in results:
+                csv_writer.writerow([r.datePublished, r.changed.name, r.contentType, r.filename])
+    except Exception as ex:
+        logger.exception('Error writing files')
+        raise ex
 
 
 # _____________________________________________________________________________
@@ -59,11 +91,11 @@ def build_summary(records: List[Record]):
 
 
 # _____________________________________________________________________________
-def process(config_settings, paths):
+def process(config_settings, paths: AppPaths):
     fdl = FetchItemList(config_settings, paths)
     records = fdl.build_list()
     try:
-        fd = FetchItem(config_settings, paths)
+        fd = FetchItem(paths)
         fd.process(records)
     finally:
         export_results(records, paths)
@@ -71,54 +103,23 @@ def process(config_settings, paths):
 
 
 # _____________________________________________________________________________
-def derive_paths(config_settings):
-    name = Path(__file__).stem
-
-    # Initialize
-    cache_settings = config_settings['cache']
-    cache_base_path = Path(cache_settings['localPath']).resolve()
-    cache_path = Path(cache_base_path, name).resolve()
-
-    output_settings = config_settings['local']
-    output_base_local_path = Path(output_settings['localPath']).resolve()
-    output_local_path = Path(output_base_local_path, name).resolve()
-
-    paths = {
-        'name': Path(__file__).stem,
-        # Cache
-        'cacheBasePath': cache_base_path,
-        'cachePath': Path(cache_base_path, name).resolve(),
-        'summaryFilepath': Path(cache_path, name + '.summary.json').resolve(),
-        # Output
-        'outputBaseLocalPath': output_base_local_path,
-        'outputLocalPath': Path(output_base_local_path, name).resolve(),
-        # Report
-        'dataFilePath': Path(cache_base_path, '%s.data.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve(),
-        'reportFilePath': Path(cache_base_path, '%s.report.%s.csv' % (name, date.today().strftime('%y-%m-%d'))).resolve(),
-        # Archive
-        'archivePath': output_local_path.joinpath(output_settings['archiveName']).resolve()
-    }
-
-    return paths
-
-
-# _____________________________________________________________________________
 def main():
     start_time = time.time()
+    main_path = Path(__file__)
     try:
         # Configure logging
         logging.captureWarnings(True)
-        with Path(__file__).with_suffix('.logging.json') as p:
+        with main_path.with_suffix('.logging.json') as p:
             logging.config.dictConfig(json.loads(p.read_text()))
         start_datetime = datetime.fromtimestamp(start_time)
         logger.info('Now: %s' % start_datetime.strftime('%a  %d-%b-%y  %I:%M:%S %p'))
         logger.debug('CPU count: %s' % os.cpu_count())
 
         # Run application
-        with Path(__file__).with_suffix('.config.json') as f:
+        with main_path.with_suffix('.config.json') as f:
             config_settings = json.loads(f.read_text())
 
-        paths = derive_paths(config_settings)
+        paths = AppPaths(main_path.stem, config_settings)
         process(config_settings, paths)
     except Exception as ex:
         logger.exception('Catch all exception')

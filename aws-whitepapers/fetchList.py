@@ -11,19 +11,20 @@ from urllib import parse
 from urllib3 import exceptions
 
 from common import Record, Changed, Result, url_client, local_tz
-from paths import sanitize_filename
+from appPaths import AppPaths
+from pathTools import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
-category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
-desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
+_category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
+_desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
 
 
 # _____________________________________________________________________________
 class FetchItemList(object):
 
     # _____________________________________________________________________________
-    def __init__(self, config_settings, paths):
+    def __init__(self, config_settings, paths: AppPaths):
         self._paths = paths
 
         remote_settings = config_settings['remote']
@@ -49,11 +50,11 @@ class FetchItemList(object):
                 adfields = item['additionalFields']
                 name = item['name']
                 title = adfields['docTitle']
-                category = m.group(1).lower() if (m := category_re.search(adfields['description'])) else None
+                category = m.group(1).lower() if (m := _category_re.search(adfields['description'])) else None
                 content_type = adfields['contentType']
 
                 # Extract text up to HTML tag from "description" and normalize whitespacing
-                desc = m.group(1) if (m := desc_re.search(adfields['description'])) else None
+                desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else None
                 desc = ' '.join(desc.split())
 
                 # Derive date from datetime and not from JSON data file
@@ -92,8 +93,8 @@ class FetchItemList(object):
 
                 # Write list page to cache
                 if count > 1:
-                    cache_pf = Path(self._paths['cachePath'], '%s.%03d.json' %
-                                (self._paths['name'], page_num)).resolve()
+                    cache_pf = Path(self._paths.cache_path, '%s.%03d.json' %
+                                (self._paths.name, page_num)).resolve()
                     logger.debug('> %4d write %s' % (page_num, cache_pf.name))
                     cache_pf.write_text(json.dumps(list_page, indent=2))
         except exceptions.SSLError as ex:
@@ -128,31 +129,31 @@ class FetchItemList(object):
         now_dt = datetime.utcnow()
         summary = r'{"written":{"utc":"%s","local":"%s"},"count":"%d","pages":"%d"}' % (pytz.UTC.localize(now_dt),
                     local_tz.localize(now_dt), hits_count, len(cache_files))
-        summary_filepath = self._paths['summaryFilepath']
+        summary_filepath = self._paths.summary_file_path
         summary_filepath.write_text(json.dumps(json.loads(summary), indent=2))
         cache_files.append(summary_filepath)
 
         # Remove superfluous cache files
-        cache_path = self._paths['cachePath']
-        [p.unlink() for p in cache_path.glob('*.*') if p not in cache_files]
+        cache_path = self._paths.cache_path
+        deleted_files = [p.unlink() for p in cache_path.glob('*.*') if p not in cache_files]
 
         return list_pages
 
     # _____________________________________________________________________________
     def build_list(self):
         logger.debug('build list')
-        logger.debug('Cache path: %s' % self._paths['cachePath'])
+        cache_path = self._paths.cache_path
+        logger.debug('Cache path: %s' % cache_path)
 
         # Test local cached age
         is_use_cache = False
-        summary_filepath = self._paths['summaryFilepath']
+        summary_filepath = self._paths.summary_file_path
         if self._cache_age_sec > 0 and summary_filepath.exists():
             is_use_cache = summary_filepath.stat().st_mtime > (time.time() - self._cache_age_sec)
 
         # Build list
-        list_pages = []
-        cache_path = self._paths['cachePath']
         logger.info('Use cached list: %s' % is_use_cache)
+        list_pages = []
         if is_use_cache:
             [list_pages.append(json.loads(p.read_text())) for p in cache_path.glob('*.*') if
                 not p.samefile(summary_filepath)]
