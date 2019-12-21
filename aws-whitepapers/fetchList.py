@@ -10,7 +10,7 @@ import time
 from urllib import parse
 from urllib3 import exceptions
 
-from common import Record, Changed, Result, url_client, local_tz
+from common import FetchRecord, Changed, Result, url_client, local_tz
 from appPaths import AppPaths
 from pathTools import sanitize_filename
 
@@ -25,6 +25,7 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def __init__(self, config_settings, paths: AppPaths):
+        logger.debug('__init__')
         self._paths = paths
 
         remote_settings = config_settings['remote']
@@ -42,7 +43,7 @@ class FetchItemList(object):
             fname = '%s - (%s)' % (sanitize_filename(fname), fdate.strftime('%Y-%m'))
             return (fname + path[loc:]) if loc >= 0 else fname
 
-        logger.debug('process list')
+        logger.debug('process_list')
         records = []
         for page in list_pages:
             for grp in page['items']:
@@ -68,7 +69,7 @@ class FetchItemList(object):
                 filename = build_filename(title, date_sort, url)
                 rel_filepath = Path(content_type, filename) if category else None
 
-                records.append(Record(name, title, category, content_type, desc,
+                records.append(FetchRecord(name, title, category, content_type, desc,
                     date_created, date_updated, date_published, date_sort,
                     url, filename, rel_filepath, Changed.nil, Result.nil))
 
@@ -77,7 +78,7 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def fetch_list_page(self, page_num, fields):
-        logger.info('> %4d fetching list page %3d' % (page_num, page_num))
+        logger.info('> %4d fetch_list_page %3d' % (page_num, page_num))
         list_page, cache_pf = None, None
         hits_total, count = 0, 0
 
@@ -106,7 +107,7 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def fetch_list(self):
-        logger.debug('fetch list')
+        logger.debug('fetch_list')
         logger.info('URL: %s' % self._source_url)
 
         list_pages, cache_files = [], []
@@ -141,7 +142,7 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def build_list(self):
-        logger.debug('build list')
+        logger.debug('build_list')
         cache_path = self._paths.cache_path
         logger.debug('Cache path: %s' % cache_path)
 

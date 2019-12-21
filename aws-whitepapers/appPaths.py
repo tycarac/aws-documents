@@ -34,6 +34,7 @@ class AppPaths:
                     % (name, date.today().strftime('%y-%m-%d'))).resolve()
         self._report_file_path = Path(self._cache_base_path, '%s.report.%s.csv'
                     % (name, date.today().strftime('%y-%m-%d'))).resolve()
+        self._extras_file_path = Path(self._cache_base_path, '%s.extra.csv' % name).resolve()
 
     # _____________________________________________________________________________
     @property
@@ -79,3 +80,8 @@ class AppPaths:
     @property
     def report_file_path(self):
         return self._report_file_path
+
+    # _____________________________________________________________________________
+    @property
+    def extras_file_path(self):
+        return self._extras_file_path

@@ -1,5 +1,5 @@
 import concurrent.futures
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging.config
 import os
 from pathlib import Path
@@ -8,7 +8,7 @@ import time
 from typing import List
 import urllib3
 
-from common import Record, Changed, Result, url_client
+from common import FetchRecord, Changed, Result, url_client
 from appPaths import AppPaths
 from incCounter import IncCounter
 
@@ -21,10 +21,11 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     def __init__(self, paths: AppPaths):
+        logger.debug('__init__')
         self._paths = paths
 
     # _____________________________________________________________________________
-    def __fetch(self, records: List[Record]):
+    def __fetch(self, records: List[FetchRecord]):
         logger.debug('__fetch')
         counter = IncCounter()
 
@@ -35,7 +36,7 @@ class FetchItem(object):
                 record, id = future.result()
 
     # _____________________________________________________________________________
-    def __fetch_item(self, record: Record, id):
+    def __fetch_item(self, record: FetchRecord, id):
         logger.debug('> %4d __fetch_item' % id)
         record.result = Result.error
         record.changed = Changed.nil
@@ -57,7 +58,7 @@ class FetchItem(object):
         return record, id
 
     # _____________________________________________________________________________
-    def __fetch_file(self, record: Record, is_file_exists, id):
+    def __fetch_file(self, record: FetchRecord, is_file_exists, id):
         try:
             output_base_local_path = self._paths.output_base_local_path
             rel_path = record.filepath.relative_to(output_base_local_path)
@@ -101,64 +102,17 @@ class FetchItem(object):
             logger.exception('> %4d Generic exception' % id)
 
     # _____________________________________________________________________________
-    def __delete_unwanted_files(self, records: List[Record]):
-        logger.debug('__delete_unwanted_files')
-
-        # Derive file paths from records and local directory
-        record_file_paths = sorted({r.filepath: r for r in records})
-        local_file_paths = sorted(self._paths.output_local_path.glob('**/*.*'))
-        archive_file_path = self._paths.archive_path
-        archive_file_paths = []
-        logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(record_file_paths))
-
-        # Check for extra or empty files
-        archive_fp = str(self._paths.archive_path)
-        for local_file_path in local_file_paths:
-            if local_file_path.stat().st_size == 0:
-                logger.info('- Delete empty file: "%s"'
-                            % local_file_path.relative_to(self._paths.output_base_local_path))
-                os.remove(local_file_path)
-                if local_file_path in record_file_paths:
-                    fp = record_file_paths[local_file_path]
-                    fp.changed = Changed.deleted
-                    fp.result = Result.warning
-            elif local_file_path not in record_file_paths and not str(local_file_path).startswith(archive_fp):
-                archive_file_paths.append(local_file_path)
-
-        # Archive files
-        if archive_file_paths:
-            self._paths.archive_path.mkdir(parents=True, exist_ok=True)
-            for file_path in archive_file_paths:
-                logger.info('- Archive file: "%s"' % file_path.relative_to(self._paths.output_base_local_path))
-                records.append(Record(None, None, None, None, None, None, None, None, None, None,
-                    file_path.name, file_path, Changed.archived, Result.warning))
-                try:
-                    # Move file to archive
-                    os.replace(file_path, Path(archive_file_path, file_path.name))
-                except OSError as ex:
-                    logger.exception('Cannot archive file: %s', file_path)
-
-    # _____________________________________________________________________________
-    @staticmethod
-    def __delete_empty_directories(parent_dir):
-        logger.debug('__delete_empty_directories')
-        for root, dirs, _ in os.walk(parent_dir, topdown=False):
-            for dir in dirs:
-                name = os.path.join(root, dir)
-                if not len(os.listdir(name)):
-                    logger.info('- Delete empty dir:  "%s"' % name)
-                    os.rmdir(name)
-
-    # _____________________________________________________________________________
     def process(self, records):
         logger.debug('process')
         logger.info('Output path: %s' % self._paths.output_local_path)
 
+        # Prepare record data for fetching
         for r in records:
             r.filepath = Path(self._paths.output_local_path, r.filepath).resolve()
-        for dir in {r.filepath.parent for r in records}:
+
+        # Create output directories
+        dirs = {r.filepath.parent for r in records}
+        for dir in dirs:
             dir.mkdir(parents=True, exist_ok=True)
 
         self.__fetch(records)
-        self.__delete_unwanted_files(records)
-        self.__delete_empty_directories(self._paths.output_local_path)
