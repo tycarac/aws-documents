@@ -3,14 +3,14 @@
   "disable_existing_loggers": false,
   "formatters": {
     "brief": {
-      "format": "%(msg)s"
+      "format": "%(levelname)-6s %(msg)s"
     },
     "context": {
       "format": "%(levelname)-6s %(name)-12s %(message)s"
     },
-    "NoExceptionFormatter":
+    "MessageFormatter":
     {
-      "()": "logger.NoExceptionFormatter"
+      "()": "logTools.MessageFormatter"
     }
   },
   "handlers": {
@@ -35,7 +35,7 @@
     "console": {
       "level": "INFO",
       "class": "logging.StreamHandler",
-      "formatter": "NoExceptionFormatter",
+      "formatter": "MessageFormatter",
       "stream": "ext://sys.stdout"
     }
   },
@@ -43,9 +43,9 @@
     "": {
       "level": "DEBUG",
       "handlers": [
-        "console",
         "debug-file",
-        "output-file"
+        "output-file",
+        "console"
       ]
     }
   }
