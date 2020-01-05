@@ -9,20 +9,20 @@ from typing import List
 import urllib3
 
 from common import FetchRecord, Changed, Result, url_client
-from appPaths import AppPaths
+from appConfig import AppConfig
 from incCounter import IncCounter
 
 logger = logging.getLogger(__name__)
-buffer_size = 1024 * 1024
+buffer_size = 1024 * 1024   # buffer for downloading remote resource
 
 
 # _____________________________________________________________________________
 class FetchItem(object):
 
     # _____________________________________________________________________________
-    def __init__(self, paths: AppPaths):
+    def __init__(self, app_config: AppConfig):
         logger.debug('__init__')
-        self._paths = paths
+        self._app_config = app_config
 
     # _____________________________________________________________________________
     def __fetch(self, records: List[FetchRecord]):
@@ -59,8 +59,10 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     def __fetch_file(self, record: FetchRecord, is_file_exists, id):
+        logger.debug('> %4d __fetch_file' % id)
+
         try:
-            output_base_local_path = self._paths.output_base_local_path
+            output_base_local_path = self._app_config.output_base_local_path
             rel_path = record.filepath.relative_to(output_base_local_path)
             logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path.parent))
             logger.debug('> %4d GET:        %s' % (id, record.url))
@@ -104,11 +106,10 @@ class FetchItem(object):
     # _____________________________________________________________________________
     def process(self, records):
         logger.debug('process')
-        logger.info('Output path: %s' % self._paths.output_local_path)
 
         # Prepare record data for fetching
         for r in records:
-            r.filepath = Path(self._paths.output_local_path, r.filepath).resolve()
+            r.filepath = Path(self._app_config.output_local_path, r.filepath).resolve()
 
         # Create output directories
         dirs = {r.filepath.parent for r in records}

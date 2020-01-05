@@ -1,4 +1,5 @@
 from datetime import date
+import json
 import logging.handlers
 from pathlib import Path
 
@@ -7,39 +8,66 @@ logger = logging.getLogger(__name__)
 
 
 # _____________________________________________________________________________
-class AppPaths:
+class AppConfig:
     _base_url = 'https://docs.aws.amazon.com/'
 
     # _____________________________________________________________________________
-    def __init__(self, name, config_settings):
+    def __init__(self, main_path: Path):
+
+        # Run application
+        with Path(main_path.with_suffix('.config.json')) as f:
+            config_settings = json.loads(f.read_text())
+
         # Initialize
-        self._name = name
+        self._name = main_path.stem
         cache_settings = config_settings['cache']
         output_settings = config_settings['local']
+        remote_settings = config_settings['remote']
 
         # Cache
         self._cache_base_path = Path(cache_settings['localPath']).resolve()
-        self._cache_path = Path(self._cache_base_path, name).resolve()
+        self._cache_path = Path(self._cache_base_path, self._name).resolve()
+        self._cache_age_sec = int(cache_settings.get('age', 300))
 
         # Output
         self._output_base_local_path = Path(output_settings['localPath']).resolve()
-        self._output_local_path = Path(self._output_base_local_path, name).resolve()
+        self._output_local_path = Path(self._output_base_local_path, self._name).resolve()
 
         # Archive
         self._archive_path = self._output_local_path.joinpath(output_settings['archiveName']).resolve()
 
         # Files
-        self._summary_file_path = Path(self._cache_path, name + '.summary.json').resolve()
+        self._summary_file_path = Path(self._cache_path, self._name + '.summary.json').resolve()
         self._data_file_path = Path(self._cache_base_path, '%s.data.%s.csv'
-                    % (name, date.today().strftime('%y-%m-%d'))).resolve()
+                    % (self._name, date.today().strftime('%y-%m-%d'))).resolve()
         self._report_file_path = Path(self._cache_base_path, '%s.report.%s.csv'
-                    % (name, date.today().strftime('%y-%m-%d'))).resolve()
-        self._extras_file_path = Path(self._cache_base_path, '%s.extra.csv' % name).resolve()
+                    % (self._name, date.today().strftime('%y-%m-%d'))).resolve()
+        self._extras_file_path = Path(self._cache_base_path, '%s.extra.csv' % self._name).resolve()
+
+        # Remote URL
+        self._source_url = remote_settings['urlLoc']
+        self._source_parameters = remote_settings['urlParameters']
 
     # _____________________________________________________________________________
     @property
     def name(self):
         return self._name
+
+    # _____________________________________________________________________________
+    @property
+    def source_url(self):
+        return self._source_url
+
+    # _____________________________________________________________________________
+    @property
+    def source_parameters(self):
+        return self._source_parameters
+
+    # _____________________________________________________________________________
+    @property
+    def cache_age_sec(self):
+        return self._cache_age_sec
+
 
     # _____________________________________________________________________________
     @property

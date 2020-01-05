@@ -10,12 +10,12 @@ from pathlib import Path
 import time
 from typing import List
 
-from appPaths import AppPaths
+from appConfig import AppConfig
 from common import FetchRecord, DeleteRecord, Changed, Result
 from fetch import FetchItem
 from fetchList import FetchItemList
 from cleanup import CleanOutput
-from logger import NoExceptionFormatter
+from logTools import MessageFormatter
 
 # Common variables
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # _____________________________________________________________________________
 def merge_fetch_results(records: List[FetchRecord], data_path: Path):
-    logger.debug('export_fetch_results')
+    logger.debug('merge_fetch_results')
 
     if data_path.exists() and data_path.stat().st_size > 0:
         with data_path.open(mode='r', newline='') as rp:
@@ -43,10 +43,10 @@ def merge_fetch_results(records: List[FetchRecord], data_path: Path):
 
 
 # _____________________________________________________________________________
-def export_fetch_results(records: List[FetchRecord], paths: AppPaths):
+def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
     logger.debug('export_fetch_results')
 
-    data_path = paths.data_file_path
+    data_path = app_config.data_file_path
     merged_records = merge_fetch_results(records, data_path)
 
     # Write data
@@ -67,7 +67,7 @@ def export_fetch_results(records: List[FetchRecord], paths: AppPaths):
         logger.exception('Error writing report file: "%s"' % data_path)
 
     # Write report
-    report_path = paths.report_file_path
+    report_path = app_config.report_file_path
     if report_path.exists():
         try:
             report_path.with_suffix('.bak.csv').write_text(report_path.read_text())
@@ -84,13 +84,13 @@ def export_fetch_results(records: List[FetchRecord], paths: AppPaths):
 
 
 # _____________________________________________________________________________
-def export_extras_results(records: List[DeleteRecord], paths: AppPaths):
+def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
     logger.debug('export_extras_results')
 
     if not records:
         return
 
-    extras_path = paths.extras_file_path
+    extras_path = app_config.extras_file_path
     has_extras_path = extras_path.exists() and extras_path.stat().st_size > 0
     if has_extras_path:
         try:
@@ -111,6 +111,8 @@ def export_extras_results(records: List[DeleteRecord], paths: AppPaths):
 
 # _____________________________________________________________________________
 def build_summary(fetch_records: List[FetchRecord], delete_records: List[FetchRecord]):
+    logger.debug('build_summary')
+
     counter_changed = Counter(map(lambda r: r.changed, fetch_records))
     counter_changed += Counter(map(lambda r: r.changed, delete_records))
     counter_result = Counter(map(lambda r: r.result, fetch_records))
@@ -133,28 +135,32 @@ def build_summary(fetch_records: List[FetchRecord], delete_records: List[FetchRe
 
 
 # _____________________________________________________________________________
-def process(config_settings, paths: AppPaths):
-    fdl = FetchItemList(config_settings, paths)
+def process(app_config: AppConfig):
+    logger.debug('process')
+    logger.info('Output path: %s' % app_config.output_local_path)
+
+    fdl = FetchItemList(app_config)
     fetch_records = fdl.build_list()
 
     delete_records = []
     try:
-        fd = FetchItem(paths)
+        fd = FetchItem(app_config)
         fd.process(fetch_records)
 
-        co = CleanOutput(paths)
+        co = CleanOutput(app_config)
         delete_records = co.process(fetch_records)
     finally:
-        export_fetch_results(fetch_records, paths)
-        export_extras_results(delete_records, paths)
+        export_fetch_results(fetch_records, app_config)
+        export_extras_results(delete_records, app_config)
         logger.info('\n' + build_summary(fetch_records, delete_records))
 
 
 # _____________________________________________________________________________
 def main():
     start_time = time.time()
-    main_path = Path(__file__)
     try:
+        main_path = Path(__file__)
+
         # Configure logging
         logging.captureWarnings(True)
         with main_path.with_suffix('.logging.json') as p:
@@ -163,12 +169,7 @@ def main():
         logger.info('Now: %s' % start_datetime.strftime('%a  %d-%b-%y  %I:%M:%S %p'))
         logger.debug('CPU count: %s' % os.cpu_count())
 
-        # Run application
-        with main_path.with_suffix('.config.json') as f:
-            config_settings = json.loads(f.read_text())
-
-        paths = AppPaths(main_path.stem, config_settings)
-        process(config_settings, paths)
+        process(AppConfig(main_path))
     except Exception as ex:
         logger.exception('Catch all exception')
     finally:

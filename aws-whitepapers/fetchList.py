@@ -11,7 +11,7 @@ from urllib import parse
 from urllib3 import exceptions
 
 from common import FetchRecord, Changed, Result, url_client, local_tz
-from appPaths import AppPaths
+from appConfig import AppConfig
 from pathTools import sanitize_filename
 
 logger = logging.getLogger(__name__)
@@ -24,16 +24,9 @@ _desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
 class FetchItemList(object):
 
     # _____________________________________________________________________________
-    def __init__(self, config_settings, paths: AppPaths):
+    def __init__(self, app_config: AppConfig):
         logger.debug('__init__')
-        self._paths = paths
-
-        remote_settings = config_settings['remote']
-        self._source_url = remote_settings['urlLoc']
-        self._source_parameters = remote_settings['urlParameters']
-
-        list_cache_settings = config_settings['cache']
-        self._cache_age_sec = int(list_cache_settings.get('age', 300))
+        self._app_config = app_config
 
     # _____________________________________________________________________________
     def process_list(self, list_pages):
@@ -83,7 +76,7 @@ class FetchItemList(object):
         hits_total, count = 0, 0
 
         try:
-            rsp = url_client.request('GET', self._source_url, fields=fields)
+            rsp = url_client.request('GET', self._app_config.source_url, fields=fields)
             logger.debug('> %4d response status  %d' % (page_num, rsp.status))
             if rsp.status == 200:
                 # extract data
@@ -94,8 +87,8 @@ class FetchItemList(object):
 
                 # Write list page to cache
                 if count > 1:
-                    cache_pf = Path(self._paths.cache_path, '%s.%03d.json' %
-                                (self._paths.name, page_num)).resolve()
+                    cache_pf = Path(self._app_config.cache_path, '%s.%03d.json' %
+                                (self._app_config.name, page_num)).resolve()
                     logger.debug('> %4d write %s' % (page_num, cache_pf.name))
                     cache_pf.write_text(json.dumps(list_page, indent=2))
         except exceptions.SSLError as ex:
@@ -108,11 +101,11 @@ class FetchItemList(object):
     # _____________________________________________________________________________
     def fetch_list(self):
         logger.debug('fetch_list')
-        logger.info('URL: %s' % self._source_url)
+        logger.info('URL: %s' % self._app_config.source_url)
 
         list_pages, cache_files = [], []
         hits_count, page_num = 0, 0
-        fields = self._source_parameters.copy()
+        fields = self._app_config.source_parameters.copy()
         while True:
             list_page, count, hits_total, cache_pf = self.fetch_list_page(page_num, fields)
             logger.debug('> %4d hits total, hits count, count: %d, %d, %d' % (page_num, hits_total, hits_count, count))
@@ -130,12 +123,12 @@ class FetchItemList(object):
         now_dt = datetime.utcnow()
         summary = r'{"written":{"utc":"%s","local":"%s"},"count":"%d","pages":"%d"}' % (pytz.UTC.localize(now_dt),
                     local_tz.localize(now_dt), hits_count, len(cache_files))
-        summary_filepath = self._paths.summary_file_path
+        summary_filepath = self._app_config.summary_file_path
         summary_filepath.write_text(json.dumps(json.loads(summary), indent=2))
         cache_files.append(summary_filepath)
 
         # Remove superfluous cache files
-        cache_path = self._paths.cache_path
+        cache_path = self._app_config.cache_path
         deleted_files = [p.unlink() for p in cache_path.glob('*.*') if p not in cache_files]
 
         return list_pages
@@ -143,14 +136,14 @@ class FetchItemList(object):
     # _____________________________________________________________________________
     def build_list(self):
         logger.debug('build_list')
-        cache_path = self._paths.cache_path
+        cache_path = self._app_config.cache_path
         logger.debug('Cache path: %s' % cache_path)
 
         # Test local cached age
         is_use_cache = False
-        summary_filepath = self._paths.summary_file_path
-        if self._cache_age_sec > 0 and summary_filepath.exists():
-            is_use_cache = summary_filepath.stat().st_mtime > (time.time() - self._cache_age_sec)
+        summary_filepath = self._app_config.summary_file_path
+        if self._app_config.cache_age_sec > 0 and summary_filepath.exists():
+            is_use_cache = summary_filepath.stat().st_mtime > (time.time() - self._app_config.cache_age_sec)
 
         # Build list
         logger.info('Use cached list: %s' % is_use_cache)

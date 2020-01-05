@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from common import FetchRecord, DeleteRecord, Changed, Result
-from appPaths import AppPaths
+from appConfig import AppConfig
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class CleanOutput(object):
 
     # _____________________________________________________________________________
-    def __init__(self, paths: AppPaths):
+    def __init__(self, paths: AppConfig):
         logger.debug('__init__')
         self._paths = paths
 
@@ -88,7 +88,6 @@ class CleanOutput(object):
     # _____________________________________________________________________________
     def process(self, fetch_records: List[FetchRecord]) -> List[DeleteRecord]:
         logger.debug('process')
-        logger.info('Output path: %s' % self._paths.output_local_path)
 
         record_file_paths = sorted({r.filepath: r for r in fetch_records})
         delete_records = []
