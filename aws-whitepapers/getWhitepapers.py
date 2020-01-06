@@ -61,8 +61,9 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
             csv_writer.writerow(FetchRecord.__slots__)
             for r in merged_records:
                 csv_writer.writerow(
-                    [r.name, r.title, r.category, r.contentType, r.description, r.dateCreated, r.dateUpdated,
-                        r.datePublished, r.dateSort, r.url, r.filename, r.filepath, r.changed.name, r.result.name])
+                    [r.name, r.title, r.category, r.contentType, r.featureFlag, r.description,
+                        r.dateCreated, r.dateUpdate, r.datePublished, r.dateSort, r.publishedDateText,
+                        r.url, r.filename, r.filepath, r.changed.name, r.result.name])
     except Exception as ex:
         logger.exception('Error writing report file: "%s"' % data_path)
 
@@ -76,9 +77,11 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
     try:
         with report_path.open(mode='w', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['datePublished', 'changed', 'contentType', 'filename'])
+            csv_writer.writerow(['datePublished', 'dateSort', 'dateUpdate', 'featureFlag', 'changed',
+                        'contentType', 'filename'])
             for r in merged_records:
-                csv_writer.writerow([r.datePublished, r.changed.name, r.contentType, r.filename])
+                csv_writer.writerow([r.datePublished, r.dateSort, r.dateUpdate, r.featureFlag, r.changed.name,
+                            r.contentType, r.filename])
     except Exception as ex:
         logger.exception('Error writing report file: "%s"' % report_path)
 

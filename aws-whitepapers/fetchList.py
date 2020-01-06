@@ -46,14 +46,17 @@ class FetchItemList(object):
                 title = adfields['docTitle']
                 category = m.group(1).lower() if (m := _category_re.search(adfields['description'])) else None
                 content_type = adfields['contentType']
+                feature_flag = adfields.get('featureFlag', None)
+                published_date_text = adfields.get('publishedText', None)
 
                 # Extract text up to HTML tag from "description" and normalize whitespacing
                 desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else None
                 desc = ' '.join(desc.split())
 
-                # Derive date from datetime and not from JSON data file
+                # Derive date from datetime (not raw from JSON data file)
                 date_created = datetime.date(dateutil.parser.parse(item['dateCreated']))
-                date_updated = datetime.date(dateutil.parser.parse(item['dateUpdated']))
+                date_update_value = adfields.get('updateDate', None)
+                date_update = datetime.date(dateutil.parser.parse(date_update_value)) if date_update_value else None
                 date_published = datetime.date(dateutil.parser.parse(adfields['datePublished']))
                 date_sort = datetime.date(dateutil.parser.parse(adfields['sortDate']))
 
@@ -62,10 +65,9 @@ class FetchItemList(object):
                 filename = build_filename(title, date_sort, url)
                 rel_filepath = Path(content_type, filename) if category else None
 
-                records.append(FetchRecord(name, title, category, content_type, desc,
-                    date_created, date_updated, date_published, date_sort,
+                records.append(FetchRecord(name, title, category, content_type, feature_flag, desc,
+                    date_created, date_update, date_published, date_sort, published_date_text,
                     url, filename, rel_filepath, Changed.nil, Result.nil))
-
         logger.info('Number items: %d' % len(records))
         return records
 
