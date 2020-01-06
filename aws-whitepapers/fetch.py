@@ -67,9 +67,6 @@ class FetchItem(object):
             logger.info('> %4d Fetching:   %s --> %s' % (id, rel_path.name, rel_path.parent))
             logger.debug('> %4d GET:        %s' % (id, record.url))
 
-            pub_timestamp = time.mktime(record.datePublished.timetuple())
-            file_path_str = str(record.filepath)
-
             # Fetch.  Must call release_conn() after file copied but opening/writing exception is possible
             rsp = None
             start_time = time.time()
@@ -90,7 +87,10 @@ class FetchItem(object):
                     rsp.release_conn()
 
             if record.result == Result.success:
+                pub_timestamp = time.mktime(record.dateSort.timetuple())
+                file_path_str = str(record.filepath)
                 os.utime(file_path_str, (pub_timestamp, pub_timestamp))
+
                 file_size = record.filepath.stat().st_size
                 fs_str = str(bytes) if file_size <= 10000 else str(file_size // 1024) + 'k'
                 logger.debug('> %4d Fetch time: %.2fs, File size %s' % (id, fetch_time, fs_str))
