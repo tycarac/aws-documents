@@ -1,31 +1,37 @@
-#
+# References
 # https://git-scm.com/docs/gitignore
+# https://github.com/github/gitignore/blob/master/Python.gitignore
 
 # Byte-compiled / optimized / DLL files
-**/__pycache__/
-**/*.py[cd]
-**/*$py.class
+__pycache__/
+*.py[cd]
+*$py.class
 
-# Files
-**/*.log
-**/*.bak
-**/*.bak.py
-**/*.tmp
+# Non-source files
+*.log
+*.bak
+*.bak.*
+*.tmp
 
 # Processing paths
-cache/**
-output/**
-logs/**
-temp/**
+cache/
+logs/
+output/
+temp/
 
 # Tools
-.idea
+.cache
+.coverage
+.coverage.*
+.idea/
+.pytest_cache/
+.tox/
 
 # Environments
-.env
-.venv
+.env/
 env/
-venv/
-ENV/
 env.bak/
+.venv/
+venv/
 venv.bak/
+ENV/

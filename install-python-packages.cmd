@@ -40,7 +40,7 @@ REM ___________________________________________________________________________
 REM Install/Update packeages from requirements
 if not exist "requirements.txt" goto :eof
 
-set cmd=pip.exe install --no-color --compile --upgrade-strategy eager --upgrade --requirement requirements.txt
+set cmd=python -m pip install --no-color --compile --upgrade-strategy eager --upgrade --requirement requirements.txt
 echo. | tee.exe -a %logfile%
 echo %cmd% | tee.exe -a %logfile%
 %cmd% | tee.exe -a %logfile%
