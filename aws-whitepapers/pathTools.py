@@ -27,7 +27,7 @@ def is_parent(parent: Path, path: Path):
 
 
 # _____________________________________________________________________________
-def __delete_empty_directories(folder):
+def delete_empty_directories(folder):
     """Deletes all empty child folders under a parent folder
     :param folder: parent folder
     :return: List of deleted folders
@@ -35,24 +35,13 @@ def __delete_empty_directories(folder):
     deleted_folders = []
     for root, dirs, _ in os.walk(folder, topdown=False):
         for dir in dirs:
-            name = os.path.join(root, dir)
-            if not len(os.listdir(name)):
-                deleted_folders.append(dir)
-                os.rmdir(name)
+            loc = os.path.join(root, dir)
+            with os.scandir(loc) as it:
+                if next(it, None) is None:
+                    deleted_folders.append(loc)
+                    os.rmdir(loc)
 
     return deleted_folders
-
-
-# _____________________________________________________________________________
-def join_url_path(url, *paths):
-    """Returns URL by combining url with each of the arguments in turn
-    :param url: base URL
-    :param paths: paths to be added
-    :return: URL
-
-    Does not validate URL
-    """
-    return '%s/%s' % (url.strip(_URL_STRIP_CHARS), '/'.join(map(lambda x: x.strip(_URL_STRIP_CHARS), paths)))
 
 
 # _____________________________________________________________________________
@@ -71,10 +60,22 @@ def sanitize_filename(filename: str):
             filename = filename.replace(ch, '-')
     if not filename.isascii():
         filename = unicodedata.normalize('NFKD', filename).encode('ASCII', 'ignore').decode('ASCII')
-    if len(filename) < 1:
-        raise ValueError('empty string')
 
     return filename
+
+
+# _____________________________________________________________________________
+def join_urlpath(url, *paths):
+    """Returns URL by combining url with each of the arguments in turn
+    :param url: base URL
+    :param paths: paths to be added
+    :return: URL
+
+    Does not validate URL
+    """
+    u = url.strip(_URL_STRIP_CHARS)
+    p = '/'.join(map(lambda x: x.strip(_URL_STRIP_CHARS), paths))
+    return '%s/%s' % (u, p) if p else u
 
 
 # _____________________________________________________________________________
@@ -86,21 +87,33 @@ def urlpath_to_pathname(url: str):
     RFC 8089: The "file" URI Scheme
     """
     urlp = parse.urlparse(' '.join(parse.unquote(url).strip().split()))
-    path = urlp.path.strip(_URL_STRIP_CHARS)
+    path = urlp.path.strip(_URL_STRIP_CHARS).replace('/', '\\')
 
-    if path:
-        pathname = (urlp.hostname + '\\' + path if urlp.hostname else path).replace('/', '\\')
-    elif urlp.hostname:
-        pathname = urlp.hostname
+    if not urlp.hostname:
+        pathname = path
     else:
-        pathname = ''
+        pathname = '%s\\%s' % (urlp.hostname, path) if path else urlp.hostname
 
     for ch in _PATHNAME_REPLACE_CHARS:
         if ch in pathname:
             pathname = pathname.replace(ch, '-')
     if not pathname.isascii():
         pathname = unicodedata.normalize('NFKD', pathname).encode('ASCII', 'ignore').decode('ASCII')
-    if len(pathname) < 1:
-        raise ValueError('empty string')
 
     return pathname
+
+
+# _____________________________________________________________________________
+def url_suffix(url: str):
+    """
+    The final component's last suffix, if any.  Includes leading period (eg: .'html').
+
+    Parsing:
+    1. Use urlparse to remove any trailing URL parameters.  Note a) "path" will contain the hostname when the URL
+    does not start with '//' and b) "path" can be empty string but never None.
+    2. Strip traling URL separator '/' and remove LHS far right URL separator
+    """
+    path = parse.urlparse(parse.unquote(url)).path.strip()
+    if (j := path.rfind('.', path.rfind('/') + 1, len(path) - 1)) >= 0:
+        return path[j:]
+    return ''

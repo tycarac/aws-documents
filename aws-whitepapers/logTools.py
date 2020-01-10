@@ -42,5 +42,5 @@ class OneLineFormatter(Formatter):
     """
     def format(self, record: LogRecord):
         if text := super().format(record):
-            text = text.rstrip(whitespace + '\n').replace('\n', '|')
+            text = text.strip().replace('\n', '|')
         return text
