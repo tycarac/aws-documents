@@ -11,7 +11,7 @@ import time
 from typing import List
 
 from appConfig import AppConfig
-from common import FetchRecord, DeleteRecord, Changed, Result
+from common import FetchRecord, DeleteRecord, Outcome, Result
 from fetch import FetchItem
 from fetchList import FetchItemList
 from cleanup import CleanOutput
@@ -31,7 +31,7 @@ def merge_fetch_results(records: List[FetchRecord], data_path: Path):
             next(csv_reader, None)  # skip csv header
             rows = {rec.filename: rec for rec in [FetchRecord.from_string(rec) for rec in csv_reader]}
         for rec in records:
-            if rec.changed != Changed.cached or rec.result != Result.success:
+            if rec.outcome != Outcome.cached or rec.result != Result.success:
                 logger.debug('Rec org|new: %s | %s' % (rows.get('filename', ''), rec))
                 rows['filename'] = rec
         results = rows.values()
@@ -63,7 +63,7 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
                 csv_writer.writerow(
                     [r.name, r.title, r.category, r.contentType, r.featureFlag, r.description,
                         r.dateCreated, r.dateUpdate, r.datePublished, r.dateSort, r.publishedDateText,
-                        r.url, r.filename, r.filepath, r.changed.name, r.result.name])
+                        r.url, r.filename, r.filepath, r.outcome.name, r.result.name])
     except Exception as ex:
         logger.exception('Error writing report file: "%s"' % data_path)
 
@@ -80,7 +80,7 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
             csv_writer.writerow(['datePublished', 'dateSort', 'dateUpdate', 'featureFlag', 'changed',
                         'contentType', 'filename'])
             for r in merged_records:
-                csv_writer.writerow([r.datePublished, r.dateSort, r.dateUpdate, r.featureFlag, r.changed.name,
+                csv_writer.writerow([r.datePublished, r.dateSort, r.dateUpdate, r.featureFlag, r.outcome.name,
                             r.contentType, r.filename])
     except Exception as ex:
         logger.exception('Error writing report file: "%s"' % report_path)
@@ -107,7 +107,7 @@ def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
                 csv_writer.writerow(DeleteRecord.__slots__)
             for r in records:
                 csv_writer.writerow(
-                    [r.contentType, r.dateDeleted, r.filename, r.filepath, r.changed.name, r.result.name])
+                    [r.contentType, r.dateDeleted, r.filename, r.filepath, r.outcome.name, r.result.name])
     except Exception as ex:
         logger.exception('Error writing extras file: "%s"' % extras_path)
 
@@ -116,19 +116,19 @@ def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
 def build_summary(fetch_records: List[FetchRecord], delete_records: List[FetchRecord]):
     logger.debug('build_summary')
 
-    counter_changed = Counter(map(lambda r: r.changed, fetch_records))
-    counter_changed += Counter(map(lambda r: r.changed, delete_records))
+    counter_outcome = Counter(map(lambda r: r.outcome, fetch_records))
+    counter_outcome += Counter(map(lambda r: r.outcome, delete_records))
     counter_result = Counter(map(lambda r: r.result, fetch_records))
     counter_result += Counter(map(lambda r: r.result, delete_records))
 
     with StringIO() as buf:
         buf.write('Records:    %5d\n' % len(fetch_records))
-        buf.write('- Cached:   %5d\n' % counter_changed[Changed.cached])
-        buf.write('- Created:  %5d\n' % counter_changed[Changed.created])
-        buf.write('- Updated:  %5d\n' % counter_changed[Changed.updated])
-        buf.write('- Nil:      %5d\n' % counter_changed[Changed.nil])
-        buf.write('  Archived: %5d\n' % counter_changed[Changed.archived])
-        buf.write('  Deleted:  %5d\n' % counter_changed[Changed.deleted])
+        buf.write('- Cached:   %5d\n' % counter_outcome[Outcome.cached])
+        buf.write('- Created:  %5d\n' % counter_outcome[Outcome.created])
+        buf.write('- Updated:  %5d\n' % counter_outcome[Outcome.updated])
+        buf.write('- Nil:      %5d\n' % counter_outcome[Outcome.nil])
+        buf.write('  Archived: %5d\n' % counter_outcome[Outcome.archived])
+        buf.write('  Deleted:  %5d\n' % counter_outcome[Outcome.deleted])
         buf.write('Results\n')
         buf.write('- Warnings: %5d\n' % counter_result[Result.warning])
         buf.write('- Errors:   %5d\n' % counter_result[Result.error])

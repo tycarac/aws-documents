@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from common import FetchRecord, DeleteRecord, Changed, Result
+from common import FetchRecord, DeleteRecord, Outcome, Result
 from appConfig import AppConfig
 
 
@@ -31,7 +31,7 @@ class CleanOutput(object):
                 logger.warning('- Delete empty file: "%s"'
                             % file_path.relative_to(self._paths.output_base_local_path))
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
-                            Changed.deleted, Result.error)
+                            Outcome.deleted, Result.error)
                 try:
                     os.remove(file_path)
                     delete_record.result = Result.success
@@ -63,7 +63,7 @@ class CleanOutput(object):
             for file_path in archive_file_paths:
                 logger.info('- Archive file: "%s"' % file_path.relative_to(self._paths.output_base_local_path))
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
-                            Changed.archived, Result.error)
+                            Outcome.archived, Result.error)
                 delete_records.append(delete_record)
                 try:
                     # Move file to archive

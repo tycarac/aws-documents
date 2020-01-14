@@ -8,7 +8,7 @@ import time
 from typing import List
 import urllib3
 
-from common import FetchRecord, Changed, Result, url_client
+from common import FetchRecord, Outcome, Result, url_client
 from appConfig import AppConfig
 from incCounter import IncCounter
 
@@ -39,7 +39,7 @@ class FetchItem(object):
     def __fetch_item(self, record: FetchRecord, id):
         logger.debug('> %4d __fetch_item' % id)
         record.result = Result.error
-        record.changed = Changed.nil
+        record.outcome = Outcome.nil
 
         # Check file exists and, if so, if old
         is_file_exists = record.filepath.exists()
@@ -50,7 +50,7 @@ class FetchItem(object):
             date_sort = record.dateSort
             logger.debug('> %4d date:       local, remote: %s, %s' % (id, local_date, date_sort))
             if local_date >= date_sort:
-                record.result, record.changed = Result.success, Changed.cached
+                record.result, record.outcome = Result.success, Outcome.cached
                 logger.debug('> %4d Cached:     "%s"' % (id, record.filepath.name))
                 return record, id
 
@@ -77,7 +77,7 @@ class FetchItem(object):
                     logger.debug('> %4d Write:      "%s"' % (id, record.filename))
                     with record.filepath.open('wb', buffering=buffer_size) as rfp:
                         shutil.copyfileobj(rsp, rfp, length=buffer_size)
-                record.changed = Changed.updated if is_file_exists else Changed.created
+                record.outcome = Outcome.updated if is_file_exists else Outcome.created
                 record.result = Result.success
             except urllib3.exceptions.HTTPError as ex:
                 logger.exception('> %4d HTTP error' % id)
@@ -99,7 +99,7 @@ class FetchItem(object):
                 if record.filepath.exists():
                     record.filepath.unlink()
                     logger.debug('> %4d Deleting:   "%s"' % (id, rel_path))
-                    record.changed = Changed.deleted
+                    record.outcome = Outcome.deleted
         except Exception as ex:
             logger.exception('> %4d Generic exception' % id)
 

@@ -10,7 +10,7 @@ import time
 from urllib import parse
 from urllib3 import exceptions
 
-from common import FetchRecord, Changed, Result, url_client, local_tz
+from common import FetchRecord, Outcome, Result, url_client, local_tz
 from appConfig import AppConfig
 from pathTools import sanitize_filename
 
@@ -67,7 +67,7 @@ class FetchItemList(object):
 
                 records.append(FetchRecord(name, title, category, content_type, feature_flag, desc,
                     date_created, date_update, date_published, date_sort, published_date_text,
-                    url, filename, rel_filepath, Changed.nil, Result.nil))
+                    url, filename, rel_filepath, Outcome.nil, Result.nil))
         logger.info('Number items: %d' % len(records))
         return records
 
