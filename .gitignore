@@ -18,6 +18,7 @@ cache/
 logs/
 output/
 temp/
+tmp/
 
 # Tools
 .cache

@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from typing import List
 
-from common import FetchRecord, DeleteRecord, Outcome, Result
-from appConfig import AppConfig
+from .common import FetchRecord, DeleteRecord, Outcome, Result
+from .appConfig import AppConfig
 
 
 logger = logging.getLogger(__name__)

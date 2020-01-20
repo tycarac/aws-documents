@@ -30,8 +30,9 @@ echo %cmd% | tee.exe -a %logfile%
 
 REM ___________________________________________________________________________
 REM Install/update useful Python packages
-REM Pip "list" output for default Python install is: "pip", "setuptools"
-set cmd=python -m pip install --no-color --compile --upgrade pip setuptools
+REM Pip "list" output from default Python 3.8.1 install is: "pip", "setuptools"
+REM https://packaging.python.org/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date
+set cmd=python -m pip install --no-color --compile --upgrade pip setuptools wheel
 echo. | tee.exe -a %logfile%
 echo %cmd% | tee.exe -a %logfile%
 %cmd% | tee.exe -a %logfile%

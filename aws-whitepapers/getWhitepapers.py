@@ -10,12 +10,12 @@ from pathlib import Path
 import time
 from typing import List
 
-from appConfig import AppConfig
-from common import FetchRecord, DeleteRecord, Outcome, Result
-from fetch import FetchItem
-from fetchList import FetchItemList
-from cleanup import CleanOutput
-from logTools import MessageFormatter
+from .appConfig import AppConfig
+from .common import FetchRecord, DeleteRecord, Outcome, Result
+from .fetch import FetchItem
+from .fetchList import FetchItemList
+from .cleanup import CleanOutput
+from .logTools import MessageFormatter
 
 # Common variables
 logger = logging.getLogger(__name__)
