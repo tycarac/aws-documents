@@ -75,7 +75,7 @@ def join_urlpath(url, *paths):
     """
     u = url.strip(_URL_STRIP_CHARS)
     p = '/'.join(map(lambda x: x.strip(_URL_STRIP_CHARS), paths))
-    return '%s/%s' % (u, p) if p else u
+    return f'{u}/{p}' if p else u
 
 
 # _____________________________________________________________________________
@@ -92,7 +92,7 @@ def urlpath_to_pathname(url: str):
     if not urlp.hostname:
         pathname = path
     else:
-        pathname = '%s\\%s' % (urlp.hostname, path) if path else urlp.hostname
+        pathname = f'{urlp.hostname}\\{path}' if path else urlp.hostname
 
     for ch in _PATHNAME_REPLACE_CHARS:
         if ch in pathname:

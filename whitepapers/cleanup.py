@@ -28,15 +28,14 @@ class CleanOutput(object):
         delete_records = []
         for file_path in file_paths:
             if file_path.stat().st_size == 0:
-                logger.warning('- Delete empty file: "%s"'
-                            % file_path.relative_to(self._paths.output_base_local_path))
+                logger.warning(f'- Delete empty file: "{file_path.relative_to(self._paths.output_base_local_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.deleted, Result.error)
                 try:
                     os.remove(file_path)
                     delete_record.result = Result.success
                 except Exception as ex:
-                    logger.exception('Cannot delete empty file: "%s"' % file_path)
+                    logger.exception(f'Cannot delete empty file: "{file_path}"')
                 delete_records.append(delete_record)
 
         return delete_records
@@ -70,7 +69,7 @@ class CleanOutput(object):
                     os.replace(file_path, Path(archive_file_path, file_path.name))
                     delete_record.result = Result.success
                 except OSError as ex:
-                    logger.exception('Cannot archive file: "%s"', file_path)
+                    logger.exception(f'Cannot archive file: "{file_path}"')
 
         return delete_records
 
@@ -79,10 +78,10 @@ class CleanOutput(object):
     def __delete_empty_directories(parent_dir):
         logger.debug('__delete_empty_directories')
         for root, dirs, _ in os.walk(parent_dir, topdown=False):
-            for dir in dirs:
-                name = os.path.join(root, dir)
+            for dr in dirs:
+                name = os.path.join(root, dr)
                 if not len(os.listdir(name)):
-                    logger.info('- Delete empty dir:  "%s"' % name)
+                    logger.info(f'- Delete empty dir:  "{name}"')
                     os.rmdir(name)
 
     # _____________________________________________________________________________

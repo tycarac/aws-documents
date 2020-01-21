@@ -10,26 +10,24 @@
     },
     "MessageFormatter":
     {
-      "()": "logTools.MessageFormatter"
+      "()": "whitepapers.logTools.MessageFormatter"
     }
   },
   "handlers": {
     "output-file": {
       "level": "INFO",
-      "class": "logging.handlers.RotatingFileHandler",
+      "class": "whitepapers.logTools.PathFileHandler",
       "formatter": "context",
-      "filename": "..\\logs\\getWhitepapers.output.log",
+      "filename": "logs\\getWhitepapers.output.log",
       "mode": "w",
-      "backupCount": 5,
       "encoding": "utf-8"
     },
     "debug-file": {
       "level": "DEBUG",
-      "class": "logging.handlers.RotatingFileHandler",
+      "class": "whitepapers.logTools.PathFileHandler",
       "formatter": "context",
-      "filename": "..\\logs\\getWhitepapers.debug.log",
+      "filename": "logs\\getWhitepapers.debug.log",
       "mode": "w",
-      "backupCount": 5,
       "encoding": "utf-8"
     },
     "console": {

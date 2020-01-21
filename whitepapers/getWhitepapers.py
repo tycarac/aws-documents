@@ -2,7 +2,6 @@ from collections import Counter
 import csv
 from datetime import datetime, timedelta
 from io import StringIO
-import json
 import logging.config, logging.handlers
 from operator import attrgetter
 import os
@@ -10,12 +9,13 @@ from pathlib import Path
 import time
 from typing import List
 
-from .appConfig import AppConfig
-from .common import FetchRecord, DeleteRecord, Outcome, Result
-from .fetch import FetchItem
-from .fetchList import FetchItemList
-from .cleanup import CleanOutput
-from .logTools import MessageFormatter
+
+from whitepapers.appConfig import AppConfig
+from whitepapers.common import FetchRecord, DeleteRecord, Outcome, Result
+from whitepapers.fetch import FetchItem
+from whitepapers.fetchList import FetchItemList
+from whitepapers.cleanup import CleanOutput
+from whitepapers.logTools import MessageFormatter, PathFileHandler
 
 # Common variables
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def merge_fetch_results(records: List[FetchRecord], data_path: Path):
             rows = {rec.filename: rec for rec in [FetchRecord.from_string(rec) for rec in csv_reader]}
         for rec in records:
             if rec.outcome != Outcome.cached or rec.result != Result.success:
-                logger.debug('Rec org|new: %s | %s' % (rows.get('filename', ''), rec))
+                logger.debug(f'Rec org|new: {rows.get("filename", "")} | {str(rec)}')
                 rows['filename'] = rec
         results = rows.values()
     else:
@@ -54,7 +54,7 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
         try:
             data_path.with_suffix('.bak.csv').write_text(data_path.read_text())
         except Exception as ex:
-            logger.exception('Error backing up data file: "%s"' % data_path)
+            logger.exception(f'Error backing up data file: "{data_path}"')
     try:
         with data_path.open(mode='w', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
@@ -65,7 +65,7 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
                         r.dateCreated, r.dateUpdate, r.datePublished, r.dateSort, r.publishedDateText,
                         r.url, r.filename, r.filepath, r.outcome.name, r.result.name])
     except Exception as ex:
-        logger.exception('Error writing report file: "%s"' % data_path)
+        logger.exception(f'Error writing report file: "{data_path}"')
 
     # Write report
     report_path = app_config.report_file_path
@@ -73,7 +73,7 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
         try:
             report_path.with_suffix('.bak.csv').write_text(report_path.read_text())
         except Exception as ex:
-            logger.exception('Error backing up report file: "%s"' % report_path)
+            logger.exception(f'Error backing up report file: "{report_path}"')
     try:
         with report_path.open(mode='w', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
@@ -83,7 +83,7 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
                 csv_writer.writerow([r.datePublished, r.dateSort, r.dateUpdate, r.featureFlag, r.outcome.name,
                             r.contentType, r.filename])
     except Exception as ex:
-        logger.exception('Error writing report file: "%s"' % report_path)
+        logger.exception(f'Error writing report file: "{report_path}"')
 
 
 # _____________________________________________________________________________
@@ -99,7 +99,7 @@ def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
         try:
             extras_path.with_suffix('.bak.csv').write_text(extras_path.read_text())
         except Exception as ex:
-            logger.exception('Error backing up extras file: "%s"' % extras_path)
+            logger.exception(f'Error backing up extras file: "{extras_path}"')
     try:
         with extras_path.open(mode='a', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
@@ -109,7 +109,7 @@ def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
                 csv_writer.writerow(
                     [r.contentType, r.dateDeleted, r.filename, r.filepath, r.outcome.name, r.result.name])
     except Exception as ex:
-        logger.exception('Error writing extras file: "%s"' % extras_path)
+        logger.exception(f'Error writing extras file: "{extras_path}"')
 
 
 # _____________________________________________________________________________
@@ -140,7 +140,7 @@ def build_summary(fetch_records: List[FetchRecord], delete_records: List[FetchRe
 # _____________________________________________________________________________
 def process(app_config: AppConfig):
     logger.debug('process')
-    logger.info('Output path: %s' % app_config.output_local_path)
+    logger.info(f'Output path: "{app_config.output_local_path}')
 
     fdl = FetchItemList(app_config)
     fetch_records = fdl.build_list()
@@ -161,23 +161,25 @@ def process(app_config: AppConfig):
 # _____________________________________________________________________________
 def main():
     start_time = time.time()
+    main_path = Path(__file__)
     try:
-        main_path = Path(__file__)
-
         # Configure logging
         logging.captureWarnings(True)
-        with main_path.with_suffix('.logging.json') as p:
+        with Path(__file__).with_suffix('.logging.json') as p:
+            import json
             logging.config.dictConfig(json.loads(p.read_text()))
-        start_datetime = datetime.fromtimestamp(start_time)
-        logger.info('Now: %s' % start_datetime.strftime('%a  %d-%b-%y  %I:%M:%S %p'))
-        logger.debug('CPU count: %s' % os.cpu_count())
 
+        start_datetime = datetime.fromtimestamp(start_time)
+        logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
+        logger.debug(f'CPU count: {os.cpu_count()}')
+
+        # Run application
         process(AppConfig(main_path))
     except Exception as ex:
         logger.exception('Catch all exception')
     finally:
-        run_timedelta = timedelta(seconds=time.time() - start_time)
-        logger.info('Run time: %02d:%02d' % (divmod(run_timedelta.total_seconds(), 60)))
+        mins, secs = divmod(timedelta(seconds=time.time() - start_time).total_seconds(), 60)
+        logger.info(f'Run time: {int(mins)}:{secs:03.1f}s')
 
 
 # _____________________________________________________________________________

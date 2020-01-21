@@ -6,9 +6,9 @@ formating and caching.  Subsequent calls to logging handlers use the same cached
 string is stored in LogRecord record.exec_text and must be cleared if a different exception format is required.  Thus
 custom logging formatters should be added after standard Logging formatters.
 """
-from logging import LogRecord, Formatter
+from logging import LogRecord, Formatter, FileHandler
+from pathlib import Path
 from sys import exc_info
-from string import whitespace
 
 
 # _____________________________________________________________________________
@@ -44,3 +44,14 @@ class OneLineFormatter(Formatter):
         if text := super().format(record):
             text = text.strip().replace('\n', '|')
         return text
+
+
+# _____________________________________________________________________________
+class PathFileHandler(FileHandler):
+    """Extends FileHandler to create the directory, if required, for the log file.
+
+    Note this has some security risk as the file path is arbitrary and could be any location.
+    """
+    def __init__(self, filename, mode='a', encoding=None, delay=False):
+        Path.mkdir(Path(filename).parent, parents=True, exist_ok=True)
+        super().__init__(filename, mode, encoding, delay)

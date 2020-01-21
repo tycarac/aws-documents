@@ -33,7 +33,7 @@ class FetchItemList(object):
         def build_filename(fname, fdate, url):
             path = parse.urlparse(url).path
             loc = path.rfind('.')
-            fname = '%s - (%s)' % (sanitize_filename(fname), fdate.strftime('%Y-%m'))
+            fname = f'{sanitize_filename(fname)} - {fdate.strftime("%Y-%m")}'
             return (fname + path[loc:]) if loc >= 0 else fname
 
         logger.debug('process_list')
@@ -68,18 +68,18 @@ class FetchItemList(object):
                 records.append(FetchRecord(name, title, category, content_type, feature_flag, desc,
                     date_created, date_update, date_published, date_sort, published_date_text,
                     url, filename, rel_filepath, Outcome.nil, Result.nil))
-        logger.info('Number items: %d' % len(records))
+        logger.info(f'Number items: {len(records)}')
         return records
 
     # _____________________________________________________________________________
     def fetch_list_page(self, page_num, fields):
-        logger.info('> %4d fetch_list_page %3d' % (page_num, page_num))
+        logger.info(f'  fetch_list_page {page_num}')
         list_page, cache_pf = None, None
         hits_total, count = 0, 0
 
         try:
             rsp = url_client.request('GET', self._app_config.source_url, fields=fields)
-            logger.debug('> %4d response status  %d' % (page_num, rsp.status))
+            logger.debug(f'> {page_num:4d} response status  {rsp.status}')
             if rsp.status == 200:
                 # extract data
                 list_page = json.loads(rsp.data.decode('utf-8'))
@@ -89,28 +89,28 @@ class FetchItemList(object):
 
                 # Write list page to cache
                 if count > 1:
-                    cache_pf = Path(self._app_config.cache_path, '%s.%03d.json' %
-                                (self._app_config.name, page_num)).resolve()
-                    logger.debug('> %4d write %s' % (page_num, cache_pf.name))
+                    fname = f'{self._app_config.name}.{page_num:03d}.json'
+                    cache_pf = Path(self._app_config.cache_path, fname).resolve()
+                    logger.debug(f'> {page_num:4d} write {fname}')
                     cache_pf.write_text(json.dumps(list_page, indent=2))
         except exceptions.SSLError as ex:
-            logger.exception('> %4d SSLError' % page_num)
+            logger.exception(f'> {page_num:4d} SSLError')
         except exceptions.HTTPError as ex:
-            logger.exception('> %4d HTTPError' % page_num)
+            logger.exception(f'> {page_num:4d} HTTPError')
 
         return list_page, count, hits_total, cache_pf
 
     # _____________________________________________________________________________
     def fetch_list(self):
         logger.debug('fetch_list')
-        logger.info('URL: %s' % self._app_config.source_url)
+        logger.info(f'URL: {self._app_config.source_url}')
 
         list_pages, cache_files = [], []
         hits_count, page_num = 0, 0
         fields = self._app_config.source_parameters.copy()
         while True:
             list_page, count, hits_total, cache_pf = self.fetch_list_page(page_num, fields)
-            logger.debug('> %4d hits total, hits count, count: %d, %d, %d' % (page_num, hits_total, hits_count, count))
+            logger.debug(f'> {page_num:4d} hits total, hits count, count: {hits_total}, {hits_count}, {count}')
             if count < 1:
                 break
             list_pages.append(list_page)
@@ -123,8 +123,8 @@ class FetchItemList(object):
 
         # Write summary file
         now_dt = datetime.utcnow()
-        summary = r'{"written":{"utc":"%s","local":"%s"},"count":"%d","pages":"%d"}' % (pytz.UTC.localize(now_dt),
-                    local_tz.localize(now_dt), hits_count, len(cache_files))
+        summary = f'{{"written":{{"utc":"{pytz.UTC.localize(now_dt)}","local":"{local_tz.localize(now_dt)}"}}' \
+                f',"count":"{hits_count}","pages":"{len(cache_files)}"}}'
         summary_filepath = self._app_config.summary_file_path
         summary_filepath.write_text(json.dumps(json.loads(summary), indent=2))
         cache_files.append(summary_filepath)
@@ -139,7 +139,7 @@ class FetchItemList(object):
     def build_list(self):
         logger.debug('build_list')
         cache_path = self._app_config.cache_path
-        logger.debug('Cache path: %s' % cache_path)
+        logger.debug(f'Cache path: {cache_path}')
 
         # Test local cached age
         is_use_cache = False
@@ -148,7 +148,7 @@ class FetchItemList(object):
             is_use_cache = summary_filepath.stat().st_mtime > (time.time() - self._app_config.cache_age_sec)
 
         # Build list
-        logger.info('Use cached list: %s' % is_use_cache)
+        logger.info(f'Use cached list: {is_use_cache}')
         list_pages = []
         if is_use_cache:
             [list_pages.append(json.loads(p.read_text())) for p in cache_path.glob('*.*') if

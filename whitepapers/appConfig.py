@@ -38,11 +38,11 @@ class AppConfig:
 
         # Files
         self._summary_file_path = Path(self._cache_path, self._name + '.summary.json').resolve()
-        self._data_file_path = Path(self._cache_base_path, '%s.data.%s.csv'
-                    % (self._name, date.today().strftime('%y-%m-%d'))).resolve()
-        self._report_file_path = Path(self._cache_base_path, '%s.report.%s.csv'
-                    % (self._name, date.today().strftime('%y-%m-%d'))).resolve()
-        self._extras_file_path = Path(self._cache_base_path, '%s.extra.csv' % self._name).resolve()
+        self._data_file_path = Path(self._cache_base_path,
+                    f'{self._name}.data.{date.today().strftime("%y-%m-%d")}.csv').resolve()
+        self._report_file_path = Path(self._cache_base_path,
+                    f'{self._name}.report.{date.today().strftime("%y-%m-%d")}.csv').resolve()
+        self._extras_file_path = Path(self._cache_base_path, f'{self._name}.extra.csv').resolve()
 
         # Remote URL
         self._source_url = remote_settings['urlLoc']
@@ -67,7 +67,6 @@ class AppConfig:
     @property
     def cache_age_sec(self):
         return self._cache_age_sec
-
 
     # _____________________________________________________________________________
     @property
