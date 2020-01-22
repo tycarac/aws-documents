@@ -179,7 +179,7 @@ def main():
         logger.exception('Catch all exception')
     finally:
         mins, secs = divmod(timedelta(seconds=time.time() - start_time).total_seconds(), 60)
-        logger.info(f'Run time: {int(mins)}:{secs:03.1f}s')
+        logger.info(f'Run time: {int(mins)}:{secs:0.1f}s')
 
 
 # _____________________________________________________________________________
