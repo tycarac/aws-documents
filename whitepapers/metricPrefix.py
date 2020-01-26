@@ -22,25 +22,25 @@ _bin_max_idx = len(_bin_prefix) - 1
 
 
 # _____________________________________________________________________________
-def to_binary_units(number) -> (str, str):
+def to_binary_units(number) -> str:
     if number < 10**3*10:
-        return str(number), ''
+        return str(number)
     for i, n in enumerate(_bin_threshold):
         if number < n:
             break
     value = round(number / _bin_divider[i])
-    return (str(value), _bin_prefix[i]) if value < 10**4 or i == _bin_max_idx else ('10', _bin_prefix[i + 1])
+    return f'{value}{_bin_prefix[i]}' if value < 10**4 or i == _bin_max_idx else f'10{_bin_prefix[i + 1]}'
 
 
 # _____________________________________________________________________________
-def to_decimal_units(number) -> (str, str):
+def to_decimal_units(number) -> str:
     if number < 10**4:
-        return str(number), ''
+        return str(number)
     for i, n in enumerate(_dec_threshold):
         if number < n:
             break
     value = round(number / _dec_divider[i])
-    return (str(value), _dec_prefix[i]) if value != 10**4 or i == _dec_max_idx else ('10', _dec_prefix[i + 1])
+    return f'{value}{_dec_prefix[i]}' if value != 10**4 or i == _dec_max_idx else f'10{_dec_prefix[i + 1]}'
 
 
 
