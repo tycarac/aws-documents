@@ -8,10 +8,10 @@ import time
 from typing import List
 import urllib3
 
-from .common import FetchRecord, Outcome, Result, url_client
-from .appConfig import AppConfig
-from .incCounter import IncCounter
-from .metricPrefix import to_decimal_units
+from whitepapers.common import FetchRecord, Outcome, Result, url_client
+from whitepapers.appConfig import AppConfig
+from whitepapers.incCounter import IncCounter
+from whitepapers.metricPrefix import to_decimal_units
 
 logger = logging.getLogger(__name__)
 buffer_size = 1024 * 1024   # buffer for downloading remote resource

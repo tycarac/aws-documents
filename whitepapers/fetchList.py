@@ -10,9 +10,9 @@ import time
 from urllib import parse
 from urllib3 import exceptions
 
-from .common import FetchRecord, Outcome, Result, url_client, local_tz
-from .appConfig import AppConfig
-from .pathTools import sanitize_filename
+from whitepapers.common import FetchRecord, Outcome, Result, url_client, local_tz
+from whitepapers.appConfig import AppConfig
+from whitepapers.pathTools import sanitize_filename
 
 logger = logging.getLogger(__name__)
 
