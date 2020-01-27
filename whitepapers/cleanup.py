@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from typing import List, Dict
 
-from .common import FetchRecord, DeleteRecord, Outcome, Result
-from .appConfig import AppConfig
+from whitepapers.common import FetchRecord, DeleteRecord, Outcome, Result
+from whitepapers.appConfig import AppConfig
 
 
 logger = logging.getLogger(__name__)
@@ -41,14 +41,14 @@ class CleanOutput(object):
         return delete_records
 
     # _____________________________________________________________________________
-    def __archive_extra_files(self, record_file_paths: Dict[Path]) -> List[DeleteRecord]:
+    def __archive_extra_files(self, record_file_paths: Dict[Path, FetchRecord]) -> List[DeleteRecord]:
         logger.debug('__archive_extra_files')
 
         # Derive file paths from records and local directory
         local_file_paths = sorted(self._app_config.output_local_path.glob('**/*.*'))
         archive_file_path = self._app_config.archive_path
         archive_file_paths = []
-        logger.debug('Number files: local, remote: %d, %d', len(local_file_paths), len(record_file_paths))
+        logger.debug(f'Number files: local, remote: {len(local_file_paths)}, {len(record_file_paths)}')
 
         archive_fp = str(self._app_config.archive_path)
         delete_records = []
@@ -59,7 +59,7 @@ class CleanOutput(object):
         if archive_file_paths:
             self._app_config.archive_path.mkdir(parents=True, exist_ok=True)
             for file_path in archive_file_paths:
-                logger.info('- Archive file: "%s"' % file_path.relative_to(self._app_config.output_base_local_path))
+                logger.info(f'- Archive file: "{file_path.relative_to(self._app_config.output_base_local_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.archived, Result.error)
                 delete_records.append(delete_record)
