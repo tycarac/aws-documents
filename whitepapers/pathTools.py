@@ -31,13 +31,13 @@ def is_parent(parent: Path, path: Path):
 
 
 # _____________________________________________________________________________
-def delete_empty_directories(folder):
+def delete_empty_directories(root: os.PathLike):
     """Deletes all empty child folders under a parent folder
-    :param folder: parent folder
+    :param root: parent folder
     :return: List of deleted folders
     """
     deleted_folders = []
-    for root, dirs, _ in os.walk(folder, topdown=False):
+    for root, dirs, _ in os.walk(str(root), topdown=False):
         for dir in dirs:
             loc = os.path.join(root, dir)
             with os.scandir(loc) as it:
@@ -69,7 +69,7 @@ def sanitize_filename(filename: str):
 
 
 # _____________________________________________________________________________
-def join_urlpath(url, *paths):
+def join_urlpath(url, *paths: str):
     """Returns URL by combining url with each of the arguments in turn
     :param url: base URL
     :param paths: paths to be added
@@ -124,7 +124,7 @@ def url_suffix(url: str):
 
 
 # _____________________________________________________________________________
-def open_files(path: os.PathLike) -> Tuple[str, int]:
+def open_files(path: str or os.PathLike) -> Tuple[str, int]:
     """Iterate over a root path returning an open file handle for each file found - including file in archives
     :return: Tuple[filename:str,file handle:int]
     """
@@ -132,7 +132,7 @@ def open_files(path: os.PathLike) -> Tuple[str, int]:
         # Iterate over files found in directory
         for filename in filenames:
             path = Path(root, filename).resolve()
-            rel_path_str = str(path.relative_to(path))
+            rel_path_str = str(Path(path.relative_to(path), path.name))
 
             # Test if file is an archive
             if file_suffix(filename) in ['.zip', '.gzip', '.gz']:
@@ -149,6 +149,12 @@ def open_files(path: os.PathLike) -> Tuple[str, int]:
 
 # _____________________________________________________________________________
 def file_suffix(fp: str):
-    if (j := fp.rfind('.', max(fp.rfind('\\'), fp.rfind('/')) + 1)) >= 0:
-        return fp[j:]
+    """Extract the file suffix from a path
+
+    :param filepath:
+    :return:
+    """
+    loc = max(fp.rfind('\\'), fp.rfind('/')) + 1
+    if (pos := fp.rfind('.', loc)) > 0 and fp[loc] != '.':
+        return fp[pos:]
     return ''
