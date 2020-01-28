@@ -25,9 +25,7 @@ def is_parent(parent: Path, path: Path):
     :param path:
     :return: True if parent path is contained in path
     """
-    parent = parent.resolve()
-    path = path.resolve()
-    return str(path).startswith(str(parent))
+    return str(path.resolve()).startswith(str(parent.resolve()))
 
 
 # _____________________________________________________________________________

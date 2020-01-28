@@ -6,7 +6,7 @@ from typing import List, Dict
 
 from whitepapers.common import FetchRecord, DeleteRecord, Outcome, Result
 from whitepapers.appConfig import AppConfig
-
+from whitepapers.pathTools import is_parent
 
 logger = logging.getLogger(__name__)
 
@@ -41,21 +41,21 @@ class CleanOutput(object):
         return delete_records
 
     # _____________________________________________________________________________
-    def __archive_extra_files(self, record_file_paths: Dict[Path, FetchRecord]) -> List[DeleteRecord]:
+    def __archive_extra_files(self, fetch_records: List[FetchRecord]) -> List[DeleteRecord]:
         logger.debug('__archive_extra_files')
 
         # Derive file paths from records and local directory
-        local_file_paths = sorted(self._app_config.output_local_path.glob('**/*.*'))
-        archive_file_path = self._app_config.archive_path
-        archive_file_paths = []
+        local_file_paths = sorted(self._app_config.output_local_path.rglob('*.*'))
+        record_file_paths = {r.filepath: r for r in fetch_records}
         logger.debug(f'Number files: local, remote: {len(local_file_paths)}, {len(record_file_paths)}')
 
-        archive_fp = str(self._app_config.archive_path)
-        delete_records = []
+        archive_file_path = self._app_config.archive_path
+        archive_file_paths = []
         for file_path in local_file_paths:
-            if file_path not in record_file_paths and not str(file_path).startswith(archive_fp):
+            if file_path not in record_file_paths and not is_parent(self._app_config.archive_path, file_path):
                 archive_file_paths.append(file_path)
 
+        delete_records = []
         if archive_file_paths:
             self._app_config.archive_path.mkdir(parents=True, exist_ok=True)
             for file_path in archive_file_paths:
@@ -87,10 +87,9 @@ class CleanOutput(object):
     def process(self, fetch_records: List[FetchRecord]) -> List[DeleteRecord]:
         logger.debug('process')
 
-        record_file_paths = {r.filepath: r for r in fetch_records}
         delete_records = []
         delete_records.extend(self.__delete_empty_files())
-        delete_records.extend(self.__archive_extra_files(record_file_paths))
+        delete_records.extend(self.__archive_extra_files(fetch_records))
         self.__delete_empty_directories(self._app_config.output_local_path)
 
         return delete_records
