@@ -10,20 +10,23 @@ import time
 from typing import List
 
 
-from whitepapers.appConfig import AppConfig
-from whitepapers.common import FetchRecord, DeleteRecord, Outcome, Result
-from whitepapers.fetch import FetchItem
-from whitepapers.fetchList import FetchItemList
-from whitepapers.cleanup import CleanOutput
-from whitepapers.logTools import MessageFormatter, PathFileHandler
+from common.appConfig import AppConfig
+from common.cleanup import CleanOutput
+from common.common import  DeleteRecord, Outcome, Result
+from common.logTools import MessageFormatter, PathFileHandler
+from whitepapers.whitepaperTypes import FetchRecord
+from whitepapers.fetchWhitepaper import FetchItem
+from whitepapers.fetchWhitepaperList import FetchItemList
+from whitepapers.whitepaperAppConfig import WhitepaperAppConfig
 
 # Common variables
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
+_CSV_BACKUP_SUFFIX = '.bak.csv'
 
 
 # _____________________________________________________________________________
 def merge_fetch_results(records: List[FetchRecord], data_path: Path):
-    logger.debug('merge_fetch_results')
+    _logger.debug('merge_fetch_results')
 
     if data_path.exists() and data_path.stat().st_size > 0:
         with data_path.open(mode='r', newline='') as rp:
@@ -32,7 +35,7 @@ def merge_fetch_results(records: List[FetchRecord], data_path: Path):
             rows = {rec.filename: rec for rec in [FetchRecord.from_string(rec) for rec in csv_reader]}
         for rec in records:
             if rec.outcome != Outcome.cached or rec.result != Result.success:
-                logger.debug(f'Rec org|new: {rows.get("filename", "")} | {str(rec)}')
+                _logger.debug(f'Rec org|new: {rows.get("filename", "")} | {str(rec)}')
                 rows['filename'] = rec
         results = rows.values()
     else:
@@ -44,7 +47,7 @@ def merge_fetch_results(records: List[FetchRecord], data_path: Path):
 
 # _____________________________________________________________________________
 def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
-    logger.debug('export_fetch_results')
+    _logger.debug('export_fetch_results')
 
     data_path = app_config.data_file_path
     merged_records = merge_fetch_results(records, data_path)
@@ -52,9 +55,9 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
     # Write data
     if data_path.exists():
         try:
-            data_path.with_suffix('.bak.csv').write_text(data_path.read_text())
+            data_path.with_suffix(_CSV_BACKUP_SUFFIX).write_text(data_path.read_text())
         except Exception as ex:
-            logger.exception(f'Error backing up data file: "{data_path}"')
+            _logger.exception(f'Error backing up data file: "{data_path}"')
     try:
         with data_path.open(mode='w', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
@@ -65,15 +68,15 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
                         r.dateCreated, r.dateUpdate, r.datePublished, r.dateSort, r.publishedDateText,
                         r.url, r.filename, r.filepath, r.outcome.name, r.result.name])
     except Exception as ex:
-        logger.exception(f'Error writing report file: "{data_path}"')
+        _logger.exception(f'Error writing report file: "{data_path}"')
 
     # Write report
     report_path = app_config.report_file_path
     if report_path.exists():
         try:
-            report_path.with_suffix('.bak.csv').write_text(report_path.read_text())
+            report_path.with_suffix(_CSV_BACKUP_SUFFIX).write_text(report_path.read_text())
         except Exception as ex:
-            logger.exception(f'Error backing up report file: "{report_path}"')
+            _logger.exception(f'Error backing up report file: "{report_path}"')
     try:
         with report_path.open(mode='w', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
@@ -83,12 +86,12 @@ def export_fetch_results(records: List[FetchRecord], app_config: AppConfig):
                 csv_writer.writerow([r.datePublished, r.dateSort, r.dateUpdate, r.featureFlag, r.outcome.name,
                             r.contentType, r.filename])
     except Exception as ex:
-        logger.exception(f'Error writing report file: "{report_path}"')
+        _logger.exception(f'Error writing report file: "{report_path}"')
 
 
 # _____________________________________________________________________________
 def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
-    logger.debug('export_extras_results')
+    _logger.debug('export_extras_results')
 
     if not records:
         return
@@ -97,9 +100,9 @@ def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
     has_extras_path = extras_path.exists() and extras_path.stat().st_size > 0
     if has_extras_path:
         try:
-            extras_path.with_suffix('.bak.csv').write_text(extras_path.read_text())
+            extras_path.with_suffix(_CSV_BACKUP_SUFFIX).write_text(extras_path.read_text())
         except Exception as ex:
-            logger.exception(f'Error backing up extras file: "{extras_path}"')
+            _logger.exception(f'Error backing up extras file: "{extras_path}"')
     try:
         with extras_path.open(mode='a', newline='') as out:
             csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
@@ -109,12 +112,12 @@ def export_extras_results(records: List[DeleteRecord], app_config: AppConfig):
                 csv_writer.writerow(
                     [r.contentType, r.dateDeleted, r.filename, r.filepath, r.outcome.name, r.result.name])
     except Exception as ex:
-        logger.exception(f'Error writing extras file: "{extras_path}"')
+        _logger.exception(f'Error writing extras file: "{extras_path}"')
 
 
 # _____________________________________________________________________________
 def build_summary(fetch_records: List[FetchRecord], delete_records: List[FetchRecord]):
-    logger.debug('build_summary')
+    _logger.debug('build_summary')
 
     counter_outcome = Counter(map(lambda r: r.outcome, fetch_records))
     counter_outcome += Counter(map(lambda r: r.outcome, delete_records))
@@ -139,8 +142,8 @@ def build_summary(fetch_records: List[FetchRecord], delete_records: List[FetchRe
 
 # _____________________________________________________________________________
 def process(app_config: AppConfig):
-    logger.debug('process')
-    logger.info(f'Output path: "{app_config.output_local_path}')
+    _logger.debug('process')
+    _logger.info(f'Output path: "{app_config.output_local_path}')
 
     fdl = FetchItemList(app_config)
     fetch_records = fdl.build_list()
@@ -151,11 +154,23 @@ def process(app_config: AppConfig):
         fd.process(fetch_records)
 
         co = CleanOutput(app_config)
-        delete_records = co.process(fetch_records)
+        fetch_paths = {r.filepath for r in fetch_records}
+        delete_records = co.process(fetch_paths)
     finally:
         export_fetch_results(fetch_records, app_config)
         export_extras_results(delete_records, app_config)
-        logger.info('\n' + build_summary(fetch_records, delete_records))
+        _logger.info('\n' + build_summary(fetch_records, delete_records))
+
+
+# _____________________________________________________________________________
+def initialize_logger(main_path: Path):
+    logger_config_path = main_path.with_suffix('.logging.json')
+    _logger.debug(f'Config file: {logger_config_path}')
+    with logger_config_path as p:
+        import json
+        logging.captureWarnings(True)
+        logging.config.dictConfig(json.loads(p.read_text()))
+    _logger.debug(f'CPU count: {os.cpu_count()}')
 
 
 # _____________________________________________________________________________
@@ -164,22 +179,17 @@ def main():
     main_path = Path(__file__)
     try:
         # Configure logging
-        logging.captureWarnings(True)
-        with Path(__file__).with_suffix('.logging.json') as p:
-            import json
-            logging.config.dictConfig(json.loads(p.read_text()))
-
+        initialize_logger(main_path)
         start_datetime = datetime.fromtimestamp(start_time)
-        logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
-        logger.debug(f'CPU count: {os.cpu_count()}')
+        _logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
 
         # Run application
-        process(AppConfig(main_path))
+        process(WhitepaperAppConfig(main_path))
     except Exception as ex:
-        logger.exception('Catch all exception')
+        _logger.exception('Catch all exception')
     finally:
         mins, secs = divmod(timedelta(seconds=time.time() - start_time).total_seconds(), 60)
-        logger.info(f'Run time: {int(mins)}:{secs:0.1f}s')
+        _logger.info(f'Run time: {int(mins)}:{secs:0.1f}s')
 
 
 # _____________________________________________________________________________

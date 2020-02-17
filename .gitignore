@@ -20,13 +20,17 @@ output/
 temp/
 tmp/
 
+# Data
+dataset/
+
 # Tools
+.idea/
+.vscode
+.pytest_cache/
+.tox/
 .cache
 .coverage
 .coverage.*
-.idea/
-.pytest_cache/
-.tox/
 
 # Environments
 .env/

@@ -10,13 +10,13 @@
     },
     "MessageFormatter":
     {
-      "()": "whitepapers.logTools.MessageFormatter"
+      "()": "common.logTools.MessageFormatter"
     }
   },
   "handlers": {
     "output-file": {
       "level": "INFO",
-      "class": "whitepapers.logTools.PathFileHandler",
+      "class": "common.logTools.PathFileHandler",
       "formatter": "context",
       "filename": "logs\\getWhitepapers.output.log",
       "mode": "w",
@@ -24,7 +24,7 @@
     },
     "debug-file": {
       "level": "DEBUG",
-      "class": "whitepapers.logTools.PathFileHandler",
+      "class": "common.logTools.PathFileHandler",
       "formatter": "context",
       "filename": "logs\\getWhitepapers.debug.log",
       "mode": "w",

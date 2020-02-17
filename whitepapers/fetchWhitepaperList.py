@@ -10,11 +10,12 @@ import time
 from urllib import parse
 from urllib3 import exceptions
 
-from whitepapers.common import FetchRecord, Outcome, Result, url_client, local_tz
-from whitepapers.appConfig import AppConfig
-from whitepapers.pathTools import sanitize_filename
+from common.appConfig import AppConfig
+from common.common import url_client, local_tz
+from common.pathTools import sanitize_filename
+from whitepapers.whitepaperTypes import FetchRecord, Outcome, Result
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 _category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
 _desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
@@ -25,7 +26,7 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def __init__(self, app_config: AppConfig):
-        logger.debug('__init__')
+        _logger.debug('__init__')
         self._app_config = app_config
 
     # _____________________________________________________________________________
@@ -36,7 +37,7 @@ class FetchItemList(object):
             fname = f'{sanitize_filename(fname)} - {fdate.strftime("%Y-%m")}'
             return (fname + path[loc:]) if loc >= 0 else fname
 
-        logger.debug('process_list')
+        _logger.debug('process_list')
         records = []
         for page in list_pages:
             for grp in page['items']:
@@ -68,18 +69,18 @@ class FetchItemList(object):
                 records.append(FetchRecord(name, title, category, content_type, feature_flag, desc,
                     date_created, date_update, date_published, date_sort, published_date_text,
                     url, filename, rel_filepath, Outcome.nil, Result.nil))
-        logger.info(f'Number items: {len(records)}')
+        _logger.info(f'Number items: {len(records)}')
         return records
 
     # _____________________________________________________________________________
     def fetch_list_page(self, page_num, fields):
-        logger.info(f'  fetch_list_page {page_num}')
+        _logger.info(f'  fetch_list_page {page_num}')
         list_page, cache_pf = None, None
         hits_total, count = 0, 0
 
         try:
             rsp = url_client.request('GET', self._app_config.source_url, fields=fields)
-            logger.debug(f'> {page_num:4d} response status  {rsp.status}')
+            _logger.debug(f'> {page_num:4d} response status  {rsp.status}')
             if rsp.status == 200:
                 # extract data
                 list_page = json.loads(rsp.data.decode('utf-8'))
@@ -91,26 +92,26 @@ class FetchItemList(object):
                 if count > 1:
                     fname = f'{self._app_config.name}.{page_num:03d}.json'
                     cache_pf = Path(self._app_config.cache_path, fname).resolve()
-                    logger.debug(f'> {page_num:4d} write {fname}')
+                    _logger.debug(f'> {page_num:4d} write {fname}')
                     cache_pf.write_text(json.dumps(list_page, indent=2))
         except exceptions.SSLError as ex:
-            logger.exception(f'> {page_num:4d} SSLError')
+            _logger.exception(f'> {page_num:4d} SSLError')
         except exceptions.HTTPError as ex:
-            logger.exception(f'> {page_num:4d} HTTPError')
+            _logger.exception(f'> {page_num:4d} HTTPError')
 
         return list_page, count, hits_total, cache_pf
 
     # _____________________________________________________________________________
     def fetch_list(self):
-        logger.debug('fetch_list')
-        logger.info(f'URL: {self._app_config.source_url}')
+        _logger.debug('fetch_list')
+        _logger.info(f'URL: {self._app_config.source_url}')
 
         list_pages, cache_files = [], []
         hits_count, page_num = 0, 0
         fields = self._app_config.source_parameters.copy()
         while True:
             list_page, count, hits_total, cache_pf = self.fetch_list_page(page_num, fields)
-            logger.debug(f'> {page_num:4d} hits total, hits count, count: {hits_total}, {hits_count}, {count}')
+            _logger.debug(f'> {page_num:4d} hits total, hits count, count: {hits_total}, {hits_count}, {count}')
             if count < 1:
                 break
             list_pages.append(list_page)
@@ -137,9 +138,9 @@ class FetchItemList(object):
 
     # _____________________________________________________________________________
     def build_list(self):
-        logger.debug('build_list')
+        _logger.debug('build_list')
         cache_path = self._app_config.cache_path
-        logger.debug(f'Cache path: {cache_path}')
+        _logger.debug(f'Cache path: {cache_path}')
 
         # Test local cached age
         is_use_cache = False
@@ -148,7 +149,7 @@ class FetchItemList(object):
             is_use_cache = summary_filepath.stat().st_mtime > (time.time() - self._app_config.cache_age_sec)
 
         # Build list
-        logger.info(f'Use cached list: {is_use_cache}')
+        _logger.info(f'Use cached list: {is_use_cache}')
         list_pages = []
         if is_use_cache:
             [list_pages.append(json.loads(p.read_text())) for p in cache_path.glob('*.*') if

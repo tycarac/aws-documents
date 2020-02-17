@@ -1,28 +1,30 @@
+from abc import ABC, ABCMeta, abstractmethod
 from datetime import date
 import json
 import logging.handlers
 from pathlib import Path
 
 # Common variables
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 # _____________________________________________________________________________
-class AppConfig:
+class AppConfig(ABC):
     _base_url = 'https://docs.aws.amazon.com/'
 
     # _____________________________________________________________________________
     def __init__(self, main_path: Path):
 
         # Run application
-        with Path(main_path.with_suffix('.config.json')) as f:
+        config_file_path = Path(__file__).with_suffix('.config.json')
+        _logger.debug(f'Config file: {config_file_path}')
+        with config_file_path as f:
             config_settings = json.loads(f.read_text())
 
         # Initialize
         self._name = main_path.stem
         cache_settings = config_settings['cache']
         output_settings = config_settings['local']
-        remote_settings = config_settings['remote']
 
         # Cache
         self._cache_base_path = Path(cache_settings['localPath']).resolve()
@@ -44,10 +46,6 @@ class AppConfig:
                     f'{self._name}.report.{date.today().strftime("%y-%m-%d")}.csv').resolve()
         self._extras_file_path = Path(self._cache_base_path, f'{self._name}.extra.csv').resolve()
 
-        # Remote URL
-        self._source_url = remote_settings['urlLoc']
-        self._source_parameters = remote_settings['urlParameters']
-
     # _____________________________________________________________________________
     @property
     def name(self):
@@ -55,13 +53,15 @@ class AppConfig:
 
     # _____________________________________________________________________________
     @property
+    @abstractmethod
     def source_url(self):
-        return self._source_url
+        raise NotImplementedError('source_url')
 
     # _____________________________________________________________________________
     @property
+    @abstractmethod
     def source_parameters(self):
-        return self._source_parameters
+        raise NotImplementedError('source_parameters')
 
     # _____________________________________________________________________________
     @property

@@ -8,13 +8,5 @@
       "size": "15",
       "item.locale": "en_US"
     }
-  },
-  "local": {
-    "localPath": "output",
-    "archiveName": "Archive"
-  },
-  "cache": {
-    "localPath": "cache",
-    "age": "21600"
   }
 }

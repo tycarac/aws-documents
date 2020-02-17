@@ -1,0 +1,10 @@
+{
+  "local": {
+    "localPath": "output",
+    "archiveName": "Archive"
+  },
+  "cache": {
+    "localPath": "cache",
+    "age": "21600"
+  }
+}

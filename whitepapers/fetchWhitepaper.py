@@ -8,13 +8,14 @@ import time
 from typing import List
 import urllib3
 
-from whitepapers.common import FetchRecord, Outcome, Result, url_client
-from whitepapers.appConfig import AppConfig
-from whitepapers.incCounter import IncCounter
-from whitepapers.metricPrefix import to_decimal_units
+from common.appConfig import AppConfig
+from common.common import url_client
+from common.incCounter import IncCounter
+from common.metricPrefix import to_decimal_units
+from whitepapers.whitepaperTypes import FetchRecord, Outcome, Result
 
-logger = logging.getLogger(__name__)
-buffer_size = 1024 * 1024   # buffer for downloading remote resource
+_logger = logging.getLogger(__name__)
+_BUFFER_SIZE = 1024 * 1024   # buffer for downloading remote resource
 
 
 # _____________________________________________________________________________
@@ -22,12 +23,12 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     def __init__(self, app_config: AppConfig):
-        logger.debug('__init__')
+        _logger.debug('__init__')
         self._app_config = app_config
 
     # _____________________________________________________________________________
     def __fetch(self, records: List[FetchRecord]):
-        logger.debug('__fetch')
+        _logger.debug('__fetch')
         counter = IncCounter()
 
         record_docs = list(filter(lambda r: r.category in ['pdf'], records))
@@ -38,21 +39,21 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     def __fetch_item(self, record: FetchRecord, id):
-        logger.debug(f'> {id:4d} __fetch_item')
+        _logger.debug(f'> {id:4d} __fetch_item')
         record.result = Result.error
         record.outcome = Outcome.nil
 
         # Check file exists and, if so, if old
         is_file_exists = record.filepath.exists()
-        logger.debug(f'> {id:4d} exists:     {str(is_file_exists):<5s}: "{record.filename}"')
+        _logger.debug(f'> {id:4d} exists:     {str(is_file_exists):<5s}: "{record.filename}"')
         if is_file_exists:
             # Check file age
             local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime))
             date_sort = record.dateSort
-            logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {date_sort}')
+            _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {date_sort}')
             if local_date >= date_sort:
                 record.result, record.outcome = Result.success, Outcome.cached
-                logger.debug(f'> {id:4d} cached:     "{record.filepath.name}"')
+                _logger.debug(f'> {id:4d} cached:     "{record.filepath.name}"')
                 return record, id
 
         self.__fetch_file(record, is_file_exists, id)
@@ -60,28 +61,28 @@ class FetchItem(object):
 
     # _____________________________________________________________________________
     def __fetch_file(self, record: FetchRecord, is_file_exists, id):
-        logger.debug(f'> {id:4d} __fetch_file')
+        _logger.debug(f'> {id:4d} __fetch_file')
 
         try:
             output_base_local_path = self._app_config.output_base_local_path
             rel_path = record.filepath.relative_to(output_base_local_path)
-            logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
-            logger.debug(f'> {id:4d} GET:        {record.url}')
+            _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
+            _logger.debug(f'> {id:4d} GET:        {record.url}')
 
             # Fetch.  Must call release_conn() after file copied but opening/writing exception is possible
             rsp = None
             start_time = time.time()
             try:
                 rsp = url_client.request('GET', record.url, preload_content=False)
-                logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+                _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
                 if rsp.status == 200:
-                    logger.debug(f'> {id:4d} write:      "{record.filename}')
-                    with record.filepath.open('wb', buffering=buffer_size) as rfp:
-                        shutil.copyfileobj(rsp, rfp, length=buffer_size)
+                    _logger.debug(f'> {id:4d} write:      "{record.filename}')
+                    with record.filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
+                        shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
                 record.outcome = Outcome.updated if is_file_exists else Outcome.created
                 record.result = Result.success
             except urllib3.exceptions.HTTPError as ex:
-                logger.exception(f'> {id:4d} HTTP error')
+                _logger.exception(f'> {id:4d} HTTP error')
             finally:
                 fetch_time = time.time() - start_time
                 if rsp:
@@ -93,19 +94,19 @@ class FetchItem(object):
                 os.utime(file_path_str, (pub_timestamp, pub_timestamp))
 
                 file_size = record.filepath.stat().st_size
-                logger.debug(f'> {id:4d} fetch time, size: {fetch_time:.2f}s, {to_decimal_units(file_size)}')
+                _logger.debug(f'> {id:4d} fetch time, size: {fetch_time:.2f}s, {to_decimal_units(file_size)}')
             else:
-                logger.error(f'> {id:4d} HTTP code:  {rsp.status}')
+                _logger.error(f'> {id:4d} HTTP code:  {rsp.status}')
                 if record.filepath.exists():
                     record.filepath.unlink()
-                    logger.debug(f'> {id:4d} deleting:   "{rel_path}"')
+                    _logger.debug(f'> {id:4d} deleting:   "{rel_path}"')
                     record.outcome = Outcome.deleted
         except Exception as ex:
-            logger.exception(f'> {id:4d} generic exception')
+            _logger.exception(f'> {id:4d} generic exception')
 
     # _____________________________________________________________________________
     def process(self, records):
-        logger.debug('process')
+        _logger.debug('process')
 
         # Prepare record data for fetching
         for r in records:
