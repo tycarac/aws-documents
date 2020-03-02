@@ -1,4 +1,4 @@
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from datetime import date
 import json
 import logging.handlers
@@ -14,6 +14,8 @@ class AppConfig(ABC):
 
     # _____________________________________________________________________________
     def __init__(self, main_path: Path):
+        """Initialises the configuration class
+        """
 
         # Run application
         config_file_path = Path(__file__).with_suffix('.config.json')

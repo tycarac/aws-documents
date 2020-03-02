@@ -47,23 +47,27 @@ def delete_empty_directories(root: os.PathLike):
 
 
 # _____________________________________________________________________________
-def sanitize_filename(filename: str):
+def sanitize_filename(filename: str, remove_dot=False):
     """Returns MS-Windows sanitized filename using ASCII character set
     :param filename: string
+    :param remove_dot: bool
     :return: sanitized filename
 
-    Leading/trailing/multiple whitespaces removed.
-    Unicode dashes converted to ASCII dash but other unicode characters removed.
+    Remove URL character encodings and leading/trailing/multiple whitespaces.
+    Convert Unicode dashes to ASCII dash but other unicode characters removed.
+    Optionally, remove doc character but not from leading
     No checks on None, leading/trailing dots, or filename length.
     """
-    filename = ' '.join(parse.unquote(filename).split())
+    fname = ' '.join(parse.unquote(filename).split())
     for ch in _FILENAME_REPLACE_CHARS:
-        if ch in filename:
-            filename = filename.replace(ch, '-')
-    if not filename.isascii():
-        filename = unicodedata.normalize('NFKD', filename).encode('ASCII', 'ignore').decode('ASCII')
+        if ch in fname:
+            fname = fname.replace(ch, '-')
+    if not fname.isascii():
+        fname = unicodedata.normalize('NFKD', fname).encode('ASCII', 'ignore').decode('ASCII')
+    if remove_dot and fname.find('.', 1) > 0:
+        fname = fname[0] + fname[1:].replace('.', '')
 
-    return filename
+    return fname
 
 
 # _____________________________________________________________________________

@@ -58,7 +58,7 @@ class CleanOutput:
         if archive_file_paths:
             self._app_config.archive_path.mkdir(parents=True, exist_ok=True)
             for file_path in archive_file_paths:
-                _logger.info(f'- Archive file: "{file_path.relative_to(self._app_config.output_base_local_path)}"')
+                _logger.info(f'-      archiving: "{file_path.relative_to(self._app_config.output_base_local_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.archived, Result.error)
                 delete_records.append(delete_record)

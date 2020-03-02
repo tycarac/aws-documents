@@ -19,7 +19,7 @@ _BUFFER_SIZE = 1024 * 1024   # buffer for downloading remote resource
 
 
 # _____________________________________________________________________________
-class FetchItem(object):
+class FetchFile(object):
 
     # _____________________________________________________________________________
     def __init__(self, app_config: AppConfig):
@@ -49,9 +49,9 @@ class FetchItem(object):
         if is_file_exists:
             # Check file age
             local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime))
-            date_sort = record.dateSort
-            _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {date_sort}')
-            if local_date >= date_sort:
+            remote_date = record.remoteDate
+            _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {remote_date}')
+            if local_date >= remote_date:
                 record.result, record.outcome = Result.success, Outcome.cached
                 _logger.debug(f'> {id:4d} cached:     "{record.filepath.name}"')
                 return record, id
@@ -89,7 +89,7 @@ class FetchItem(object):
                     rsp.release_conn()
 
             if record.result == Result.success:
-                pub_timestamp = time.mktime(record.dateSort.timetuple())
+                pub_timestamp = time.mktime(record.remoteDate.timetuple())
                 file_path_str = str(record.filepath)
                 os.utime(file_path_str, (pub_timestamp, pub_timestamp))
 
