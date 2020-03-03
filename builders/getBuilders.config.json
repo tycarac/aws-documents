@@ -1,0 +1,13 @@
+{
+  "remote": {
+    "urlLoc": "https://aws.amazon.com/api/dirs/items/search",
+    "urlParameters": {
+      "item.directoryId": "amazon-redwood",
+      "sort_by": "item.additionalFields.customSort",
+      "sort_order": "asc",
+      "size": "24",
+      "item.locale": "en_US",
+      "tags.id": "!amazon-redwood%23content-type%23video"
+    }
+  }
+}

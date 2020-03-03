@@ -9,17 +9,23 @@ from typing import List
 import urllib3
 
 from common.appConfig import AppConfig
-from common.common import url_client
-from common.incCounter import IncCounter
+from common.cleanup import CleanOutput
+from common.common import initialize_logger
+from common.reporting import Reporting
+from common.logTools import MessageFormatter, PathFileHandler
+from common.fetchFile import FetchFile
 from common.metricPrefix import to_decimal_units
-from whitepapers.whitepaperTypes import FetchRecord, Outcome, Result
+from builders.fetchBuildersList import FetchRecord
+from builders.buildersAppConfig import BuildersAppConfig
+from builders.buildersTypes import BuildersItem
+
 
 _logger = logging.getLogger(__name__)
 _BUFFER_SIZE = 1024 * 1024   # buffer for downloading remote resource
 
 
 # _____________________________________________________________________________
-class FetchFile(object):
+class FetchItem(object):
 
     # _____________________________________________________________________________
     def __init__(self, app_config: AppConfig):
@@ -31,7 +37,7 @@ class FetchFile(object):
         _logger.debug('__fetch')
         counter = IncCounter()
 
-        record_docs = list(filter(lambda r: r.to_download, records))
+        record_docs = list(filter(lambda r: r.category in ['pdf'], records))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             future_entry = {executor.submit(self.__fetch_item, rec, counter.inc_value) for rec in record_docs}
             for future in concurrent.futures.as_completed(future_entry):
@@ -49,9 +55,9 @@ class FetchFile(object):
         if is_file_exists:
             # Check file age
             local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime))
-            remote_date = record.dateRemote
-            _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {remote_date}')
-            if local_date >= remote_date:
+            date_sort = record.dateSort
+            _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {date_sort}')
+            if local_date >= date_sort:
                 record.result, record.outcome = Result.success, Outcome.cached
                 _logger.debug(f'> {id:4d} cached:     "{record.filepath.name}"')
                 return record, id
@@ -89,7 +95,7 @@ class FetchFile(object):
                     rsp.release_conn()
 
             if record.result == Result.success:
-                pub_timestamp = time.mktime(record.dateRemote.timetuple())
+                pub_timestamp = time.mktime(record.dateSort.timetuple())
                 file_path_str = str(record.filepath)
                 os.utime(file_path_str, (pub_timestamp, pub_timestamp))
 

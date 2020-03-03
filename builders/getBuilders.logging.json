@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "brief": {
+      "format": "%(levelname)-6s %(msg)s"
+    },
+    "context": {
+      "format": "%(levelname)-6s %(name)-12s %(message)s"
+    },
+    "MessageFormatter":
+    {
+      "()": "common.logTools.MessageFormatter"
+    }
+  },
+  "handlers": {
+    "output-file": {
+      "level": "INFO",
+      "class": "common.logTools.PathFileHandler",
+      "formatter": "context",
+      "filename": "logs\\getbuilders.output.log",
+      "mode": "w",
+      "encoding": "utf-8"
+    },
+    "debug-file": {
+      "level": "DEBUG",
+      "class": "common.logTools.PathFileHandler",
+      "formatter": "context",
+      "filename": "logs\\getbuilders.debug.log",
+      "mode": "w",
+      "encoding": "utf-8"
+    },
+    "console": {
+      "level": "INFO",
+      "class": "logging.StreamHandler",
+      "formatter": "MessageFormatter",
+      "stream": "ext://sys.stdout"
+    }
+  },
+  "loggers": {
+    "": {
+      "level": "DEBUG",
+      "handlers": [
+        "debug-file",
+        "output-file",
+        "console"
+      ]
+    }
+  }
+}

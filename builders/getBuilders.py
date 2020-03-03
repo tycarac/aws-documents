@@ -10,9 +10,9 @@ from common.common import initialize_logger
 from common.reporting import Reporting
 from common.logTools import MessageFormatter, PathFileHandler
 from common.fetchFile import FetchFile
-from whitepapers.fetchWhitepaperList import FetchWhitepaperList
-from whitepapers.whitepaperAppConfig import WhitepaperAppConfig
-from whitepapers.whitepaperTypes import WhitepaperItem
+from builders.fetchBuildersList import FetchBuildersList
+from builders.buildersAppConfig import BuildersAppConfig
+from builders.buildersTypes import BuildersItem
 
 # Common variables
 _logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def process(app_config: AppConfig):
     _logger.debug('process')
     _logger.info(f'Output path: "{app_config.output_local_path}')
 
-    fdl = FetchWhitepaperList(app_config)
+    fdl = FetchBuildersList(app_config)
     fetch_records = fdl.build_list()
 
     delete_records = []
@@ -36,7 +36,7 @@ def process(app_config: AppConfig):
         fetch_paths = {r.filepath for r in fetch_records}
         delete_records = co.process(fetch_paths)
     finally:
-        reporting = Reporting(fetch_records, WhitepaperItem, delete_records, app_config)
+        reporting = Reporting(fetch_records, BuildersItem, delete_records, app_config)
         reporting.export_fetch_results()
         reporting.export_extras_results()
         _logger.info('\n' + reporting.build_summary())
@@ -53,7 +53,7 @@ def main():
         _logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
 
         # Run application
-        process(WhitepaperAppConfig(main_path))
+        process(BuildersAppConfig(main_path))
     except Exception as ex:
         _logger.exception('Catch all exception')
     finally:

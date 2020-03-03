@@ -48,11 +48,12 @@ class Result(Enum):
 # Data classes
 @dataclass
 class FetchRecord(ABC):
-    __slots__ = ['filename', 'filepath', 'remoteDate', 'url', 'outcome', 'result']
+    __slots__ = ['filename', 'filepath', 'dateRemote', 'url', 'to_download', 'outcome', 'result']
     filename: str
     filepath: Path
-    remoteDate: date
+    dateRemote: date
     url: str
+    to_download: bool
     outcome: Outcome
     result: Result
 
@@ -61,7 +62,8 @@ class FetchRecord(ABC):
     def to_list(self) -> List[Any]:
         """Return list of the instance attribute values.
         """
-        return [self.filename, self.filepath, self.remoteDate, self.url, self.outcome.name, self.result.name]
+        return [self.filename, self.filepath, self.dateRemote, self.url, self.to_download,
+                    self.outcome.name, self.result.name]
 
     # _____________________________________________________________________________
     @staticmethod
@@ -70,7 +72,8 @@ class FetchRecord(ABC):
         """Create an instance of the dataclass from a list os strings.  For simplicity, instead of introspecting
          the dataclass for field types, the function is manually synchronized (similar to __slots__).
         """
-        return FetchRecord(s[0], Path(s[1]), date.fromisoformat(s[2]), s[3], Outcome[s[4]], Result[s[5]])
+        return FetchRecord(s[0], Path(s[1]), date.fromisoformat(s[2]), s[3], str_to_bool(s[4]),
+                    Outcome[s[5]], Result[s[6]])
 
 
 # _____________________________________________________________________________
@@ -95,3 +98,7 @@ def initialize_logger(main_path: Path):
         logging.config.dictConfig(json.loads(p.read_text()))
     _logger.debug(f'CPU count: {os.cpu_count()}')
 
+
+# _____________________________________________________________________________
+def str_to_bool(s):
+    return s.lower() in ('true', 't', 'yes', '1')

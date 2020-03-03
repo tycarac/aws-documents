@@ -40,7 +40,7 @@ class Reporting:
             results = rows.values()
         else:
             results = self._frecs
-        sorted(results, key=attrgetter('contentType', 'datePublished', 'filename'), reverse=True)
+        sorted(results, key=attrgetter('contentType', 'dateRemote', 'filename'), reverse=True)
 
         return results
 

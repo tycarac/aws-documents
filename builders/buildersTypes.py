@@ -8,21 +8,20 @@ from common.common import FetchRecord, Outcome, Result, str_to_bool
 
 # _____________________________________________________________________________
 @dataclass
-class WhitepaperItem(FetchRecord):
+class BuildersItem(FetchRecord):
     __slots__ = ['filename', 'filepath', 'dateRemote', 'url', 'to_download', 'outcome', 'result',
-                'name', 'title', 'category', 'contentType', 'featureFlag', 'description',
-                'dateCreated', 'dateUpdated', 'datePublished', 'dateSort']
+                'name', 'learningLevel', 'headline', 'dateUpdated', 'dateCreated', 'contentType',
+                'downloadUrl', 'videoUrl', 'description']
 
     name: str
-    title: str
-    category: str
-    contentType: str
-    featureFlag: str
-    description: str
-    dateCreated: date
+    learningLevel: str
+    headline: str
     dateUpdated: date
-    datePublished: date
-    dateSort: date
+    dateCreated: date
+    contentType: str
+    downloadUrl: str
+    videoUrl: str
+    description: str
 
     # _____________________________________________________________________________
     def to_list(self) -> List[Any]:
@@ -30,8 +29,8 @@ class WhitepaperItem(FetchRecord):
         """
         return [self.filename, self.filepath, self.dateRemote, self.url, self.to_download,
                     self.outcome.name, self.result.name,
-                    self.name, self.title, self.category, self.contentType, self.featureFlag,
-                    self.description, self.dateCreated, self.dateUpdated, self.datePublished, self.dateSort]
+                    self.name, self.learningLevel, self.headline, self.dateUpdated, self.dateCreated,
+                    self.contentType, self.downloadUrl, self.videoUrl, self.description]
 
     # _____________________________________________________________________________
     @staticmethod
@@ -39,8 +38,8 @@ class WhitepaperItem(FetchRecord):
         """Create an instance of the dataclass from a list os strings.  For simplicity, instead of introspecting
          the dataclass for field types, the function is manually synchronized (similar to __slots__).
         """
-        return WhitepaperItem(s[0], Path(s[1]), date.fromisoformat(s[2]), s[3], str_to_bool(s[4]),
+        return BuildersItem(s[0], Path(s[1]), date.fromisoformat(s[2]), s[3], str_to_bool(s[4]),
                     Outcome[s[5]], Result[s[6]],
-                    s[7], s[8], s[9], s[10], s[11], s[12],
-                    date.fromisoformat(s[13]), date.fromisoformat(s[14]) if s[14] else None,
-                    date.fromisoformat(s[15]), date.fromisoformat(s[16]))
+                    s[7], s[8], s[9],
+                    date.fromisoformat(s[10]) if s[10] else None, date.fromisoformat(s[11]),
+                    s[12], s[13], s[14], s[15])

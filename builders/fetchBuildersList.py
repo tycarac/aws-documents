@@ -5,18 +5,15 @@ from pathlib import Path
 import re
 
 from common.appConfig import AppConfig
-from common.common import Result, Outcome
 from common.fetchList import FetchList
-from whitepapers.whitepaperTypes import WhitepaperItem
+from builders.buildersTypes import BuildersItem, Outcome, Result
 
 _logger = logging.getLogger(__name__)
-
-_category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
 _desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
 
 
 # _____________________________________________________________________________
-class FetchWhitepaperList(FetchList):
+class FetchBuildersList(FetchList):
 
     # _____________________________________________________________________________
     def __init__(self, app_config: AppConfig):
@@ -29,10 +26,11 @@ class FetchWhitepaperList(FetchList):
 
         adfields = item['additionalFields']
         name = item['name']
-        title = adfields['docTitle']
-        category = m.group(1).lower() if (m := _category_re.search(adfields['description'])) else None
+        learning_level = adfields['learningLevel']
+        headline = adfields['headline']
         content_type = adfields['contentType']
-        feature_flag = adfields.get('featureFlag', None)
+        download_url = adfields.get('downloadUrl', '').split('?')[0]
+        video_url = adfields.get('videoUrl', '')
 
         # Extract text up to HTML tag from "description" and normalize whitespacing
         desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else ''
@@ -42,20 +40,17 @@ class FetchWhitepaperList(FetchList):
         date_created = datetime.date(parser.parse(item['dateCreated']))
         date_update_value = adfields.get('updateDate', None)
         date_updated = datetime.date(parser.parse(date_update_value)) if date_update_value else None
-        date_published = datetime.date(parser.parse(adfields['datePublished']))
-        date_sort = datetime.date(parser.parse(adfields['sortDate']))
 
         # Extract paths
-        url = adfields['primaryURL'].split('?')[0]
-        filename = FetchList.build_filename(title, date_sort, url)
-        rel_filepath = Path(content_type, filename) if category else Path(filename)
+        filename_date = date_updated if date_updated else date_created
+        filename = FetchList.build_filename(headline, filename_date, download_url)
+        rel_filepath = Path(content_type, filename) if content_type else Path(filename)
 
         # Derived
-        to_download = category in ['pdf']
+        to_download = True if download_url else False
+        date_remote = date_updated if date_updated else date_created
 
-        record = WhitepaperItem(filename, rel_filepath, date_sort, url, to_download, Outcome.nil, Result.nil,
-                    name, title, category, content_type, feature_flag, description,
-                    date_created, date_updated, date_published, date_sort)
-
+        record = BuildersItem(filename, rel_filepath, date_remote, download_url, to_download, Outcome.nil, Result.nil,
+                    name, learning_level, headline, date_updated, date_created, content_type,
+                    download_url, video_url, description)
         return record
-
