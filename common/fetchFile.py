@@ -1,5 +1,5 @@
 import concurrent.futures
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging.config
 import os
 from pathlib import Path
@@ -10,7 +10,6 @@ import urllib3
 
 from common.appConfig import AppConfig
 from common.common import url_client
-from common.incCounter import IncCounter
 from common.metricPrefix import to_decimal_units
 from whitepapers.whitepaperTypes import FetchRecord, Outcome, Result
 
@@ -27,18 +26,18 @@ class FetchFile(object):
         self._app_config = app_config
 
     # _____________________________________________________________________________
-    def __fetch(self, records: List[FetchRecord]):
+    def __fetch_records(self, records: List[FetchRecord]):
         _logger.debug('__fetch')
-        counter = IncCounter()
 
         record_docs = list(filter(lambda r: r.to_download, records))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            future_entry = {executor.submit(self.__fetch_item, rec, counter.inc_value) for rec in record_docs}
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future_entry = {executor.submit(self.__fetch_record, rec, id) for id, rec in enumerate(record_docs)}
             for future in concurrent.futures.as_completed(future_entry):
                 record, id = future.result()
 
     # _____________________________________________________________________________
-    def __fetch_item(self, record: FetchRecord, id):
+    def __fetch_record(self, record: FetchRecord, id: int):
         _logger.debug(f'> {id:4d} __fetch_item')
         record.result = Result.error
         record.outcome = Outcome.nil
@@ -60,7 +59,7 @@ class FetchFile(object):
         return record, id
 
     # _____________________________________________________________________________
-    def __fetch_file(self, record: FetchRecord, is_file_exists, id):
+    def __fetch_file(self, record: FetchRecord, is_file_exists: bool, id: int):
         _logger.debug(f'> {id:4d} __fetch_file')
 
         try:
@@ -69,25 +68,10 @@ class FetchFile(object):
             _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
             _logger.debug(f'> {id:4d} GET:        {record.url}')
 
-            # Fetch.  Must call release_conn() after file copied but opening/writing exception is possible
-            rsp = None
-            start_time = time.time()
-            try:
-                rsp = url_client.request('GET', record.url, preload_content=False)
-                _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
-                if rsp.status == 200:
-                    _logger.debug(f'> {id:4d} write:      "{record.filename}')
-                    with record.filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
-                        shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
-                record.outcome = Outcome.updated if is_file_exists else Outcome.created
+            rsp_status, fetch_time = FetchFile.__stream_response(record.url, record.filepath, id)
+            if rsp_status == 200:
                 record.result = Result.success
-            except urllib3.exceptions.HTTPError as ex:
-                _logger.exception(f'> {id:4d} HTTP error')
-            finally:
-                fetch_time = time.time() - start_time
-                if rsp:
-                    rsp.release_conn()
-
+                record.outcome = Outcome.updated if is_file_exists else Outcome.created
             if record.result == Result.success:
                 pub_timestamp = time.mktime(record.dateRemote.timetuple())
                 file_path_str = str(record.filepath)
@@ -96,13 +80,69 @@ class FetchFile(object):
                 file_size = record.filepath.stat().st_size
                 _logger.debug(f'> {id:4d} fetch time, size: {fetch_time:.2f}s, {to_decimal_units(file_size)}')
             else:
-                _logger.error(f'> {id:4d} HTTP code:  {rsp.status}')
+                _logger.error(f'> {id:4d} HTTP code:  {rsp_status}')
                 if record.filepath.exists():
                     record.filepath.unlink()
                     _logger.debug(f'> {id:4d} deleting:   "{rel_path}"')
                     record.outcome = Outcome.deleted
         except Exception as ex:
             _logger.exception(f'> {id:4d} generic exception')
+
+    # _____________________________________________________________________________
+    @staticmethod
+    def __get_response(url: str, filepath: Path, id: int):
+        # Must call release_conn() after file copied but opening/writing exception is possible
+        rsp = None
+        fetch_time = timedelta()
+        try:
+            start_time = time.time()
+            rsp = url_client.request('GET', url)
+            _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+            while rsp.status in urllib3.HTTPResponse.REDIRECT_STATUSES:
+                if location := rsp.headers.get('location', None):
+                    _logger.debug(f'> {id:4d} redirct:      "{url} --> {location}')
+                    url = location
+                    rsp.release_conn()
+                    rsp = url_client.request('GET', url, preload_content=False)
+                else:
+                    raise RuntimeError('Response header "location" not found')
+            if rsp.status == 200:
+                _logger.debug(f'> {id:4d} write:      "{filepath.name}"')
+                with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
+                    shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
+            fetch_time = time.time() - start_time
+        except urllib3.exceptions.HTTPError as ex:
+            _logger.exception(f'> {id:4d} HTTP error')
+        except Exception as ex:
+            _logger.exception('Unexpected')
+            raise ex
+        finally:
+            if rsp:
+                rsp.release_conn()
+
+        return rsp.status, fetch_time
+
+    # _____________________________________________________________________________
+    @staticmethod
+    def __stream_response(url: str, filepath: Path, id: int):
+        # Must call release_conn() after file copied but opening/writing exception is possible
+        rsp = None
+        start_time, fetch_time = time.time(), timedelta()
+        try:
+            rsp = url_client.request('GET', url, preload_content=False)
+            _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+            if rsp.status == 200:
+                _logger.debug(f'> {id:4d} write:      "{filepath.name}"')
+                with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
+                    shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
+            fetch_time = time.time() - start_time
+        except urllib3.exceptions.HTTPError as ex:
+            _logger.exception(f'> {id:4d} HTTP error')
+        finally:
+            if rsp:
+                rsp.release_conn()
+
+        return rsp.status, fetch_time
 
     # _____________________________________________________________________________
     def process(self, records):
@@ -117,4 +157,4 @@ class FetchFile(object):
         for dir in dirs:
             dir.mkdir(parents=True, exist_ok=True)
 
-        self.__fetch(records)
+        self.__fetch_records(records)
