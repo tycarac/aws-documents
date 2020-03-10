@@ -16,7 +16,7 @@ from common.logTools import MessageFormatter, PathFileHandler
 # HTTP headers: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
 url_headers = urllib3.make_headers(keep_alive=True, accept_encoding=True)
 url_retries = urllib3.Retry(total=3, backoff_factor=5, status_forcelist=[500, 502, 503, 504])
-url_client = urllib3.PoolManager(timeout=urllib3.Timeout(total=15.0), retries=url_retries, block=True,
+url_client = urllib3.PoolManager(timeout=urllib3.Timeout(total=15.0), retries=url_retries, block=True, maxsize=10,
                                  headers=url_headers)
 
 # Date time
@@ -100,5 +100,5 @@ def initialize_logger(main_path: Path):
 
 
 # _____________________________________________________________________________
-def str_to_bool(s):
+def str_to_bool(s: str) -> bool:
     return s.lower() in ('true', 't', 'yes', '1')
