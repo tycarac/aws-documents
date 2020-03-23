@@ -13,9 +13,12 @@ from common.logTools import MessageFormatter, PathFileHandler
 
 # _____________________________________________________________________________
 # URL variables
-# HTTP headers: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
+# Reference HTTP headers: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers
+# Note urllib3:
+#   1. A redirect, HTTP status 3xx, is handled as a retry can counts towards the connection retry count.  Thus
+#      redirects will exhaust retries (default: 3).
 url_headers = urllib3.make_headers(keep_alive=True, accept_encoding=True)
-url_retries = urllib3.Retry(total=3, backoff_factor=5, status_forcelist=[500, 502, 503, 504])
+url_retries = urllib3.Retry(total=4, backoff_factor=5, status_forcelist=[500, 502, 503, 504])
 url_client = urllib3.PoolManager(timeout=urllib3.Timeout(total=15.0), retries=url_retries, block=True, maxsize=10,
                                  headers=url_headers)
 

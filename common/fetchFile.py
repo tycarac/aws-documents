@@ -72,11 +72,13 @@ class FetchFile(object):
             if rsp_status == 200:
                 record.result = Result.success
                 record.outcome = Outcome.updated if is_file_exists else Outcome.created
-            if record.result == Result.success:
+
+                # Update file datetime stamp
                 pub_timestamp = time.mktime(record.dateRemote.timetuple())
                 file_path_str = str(record.filepath)
                 os.utime(file_path_str, (pub_timestamp, pub_timestamp))
 
+                # Derive file size
                 file_size = record.filepath.stat().st_size
                 _logger.debug(f'> {id:4d} fetch time, size: {fetch_time:.2f}s, {to_decimal_units(file_size)}')
             else:
