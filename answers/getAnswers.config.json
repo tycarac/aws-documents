@@ -1,0 +1,12 @@
+{
+  "remote": {
+    "urlLoc": "https://aws.amazon.com/api/dirs/items/search",
+    "urlParameters": {
+      "item.directoryId": "solutions-master",
+      "sort_by": "item.additionalFields.sortDate",
+      "sort_order": "desc",
+      "size": "30",
+      "item.locale": "en_US"
+    }
+  }
+}
