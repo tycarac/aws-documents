@@ -25,8 +25,6 @@ class FetchWhitepaperList(FetchList):
 
     # _____________________________________________________________________________
     def build_record(self, item):
-        _logger.debug('build_record')
-
         adfields = item['additionalFields']
         name = item['name']
         title = adfields['docTitle']
@@ -57,5 +55,6 @@ class FetchWhitepaperList(FetchList):
                     name, title, category, content_type, feature_flag, description,
                     date_created, date_updated, date_published, date_sort)
 
+        _logger.debug(f'build_record "{record.title}"')
         return record
 

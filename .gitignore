@@ -27,6 +27,7 @@ dataset/
 .idea/
 .vscode
 .pytest_cache/
+.nox/
 .tox/
 .cache
 .coverage

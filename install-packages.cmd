@@ -7,12 +7,12 @@ del /q %logfile% >nul 2>&1
 
 REM ___________________________________________________________________________
 REM Create virtural environment
-if not exist ".\.env" (
+if not exist ".\.venv" (
 echo Creating virtual environment ...
-python -m venv ".\.env"
+python -m venv ".\.venv"
 )
 echo Activating virtual environment ...
-call .env\Scripts\activate
+call .venv\Scripts\activate
 
 REM ___________________________________________________________________________
 REM List Python packages

@@ -25,8 +25,6 @@ class FetchAnswersList(FetchList):
 
     # _____________________________________________________________________________
     def build_record(self, item):
-        _logger.debug('build_record')
-
         adfields = item['additionalFields']
         name = item['name']
         headline = adfields['headline']
@@ -57,5 +55,6 @@ class FetchAnswersList(FetchList):
                     name, category, content_type, feature_flag, headline, sub_headline, description,
                     date_created, date_updated, date_sort)
 
+        _logger.debug(f'build_record "{record.headline}"')
         return record
 

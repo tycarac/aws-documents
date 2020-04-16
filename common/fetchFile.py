@@ -97,15 +97,16 @@ class FetchFile(object):
         rsp = None
         fetch_time = timedelta()
         try:
+            redirect_count = 3
             start_time = time.time()
-            rsp = url_client.request('GET', url)
+            rsp = url_client.request('GET', url, preload_content=False)
             _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
-            while rsp.status in urllib3.HTTPResponse.REDIRECT_STATUSES:
+            while rsp.status in urllib3.HTTPResponse.REDIRECT_STATUSES and redirect_count > 0:
                 if location := rsp.headers.get('location', None):
-                    _logger.debug(f'> {id:4d} redirct:      "{url} --> {location}')
+                    _logger.debug(f'> {id:4d} redirct:      {url} --> {location}')
                     url = location
                     rsp.release_conn()
-                    rsp = url_client.request('GET', url, preload_content=False)
+                    rsp = url_client.request('GET', location, preload_content=False)
                 else:
                     raise RuntimeError('Response header "location" not found')
             if rsp.status == 200:
@@ -133,6 +134,15 @@ class FetchFile(object):
         try:
             rsp = url_client.request('GET', url, preload_content=False)
             _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+            while rsp.status in urllib3.HTTPResponse.REDIRECT_STATUSES:
+                if location := rsp.headers.get('location', None):
+                    _logger.debug(f'> {id:4d} redirct:      "{url} --> {location}')
+                    url = location
+                    rsp.release_conn()
+                    rsp = url_client.request('GET', url, preload_content=False)
+                    _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+                else:
+                    raise RuntimeError('Response header "location" not found')
             if rsp.status == 200:
                 _logger.debug(f'> {id:4d} write:      "{filepath.name}"')
                 with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:

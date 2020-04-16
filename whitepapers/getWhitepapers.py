@@ -3,7 +3,6 @@ import logging.handlers
 from pathlib import Path
 import time
 
-
 from common.appConfig import AppConfig
 from common.cleanup import CleanOutput
 from common.common import initialize_logger

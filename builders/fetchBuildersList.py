@@ -22,8 +22,6 @@ class FetchBuildersList(FetchList):
 
     # _____________________________________________________________________________
     def build_record(self, item):
-        _logger.debug('build_record')
-
         adfields = item['additionalFields']
         name = item['name']
         learning_level = adfields['learningLevel']
@@ -53,4 +51,6 @@ class FetchBuildersList(FetchList):
         record = BuildersItem(filename, rel_filepath, date_remote, download_url, to_download, Outcome.nil, Result.nil,
                     name, learning_level, headline, date_updated, date_created, content_type,
                     download_url, video_url, description)
+
+        _logger.debug(f'build_record "{record.headline}"')
         return record
