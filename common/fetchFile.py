@@ -162,10 +162,11 @@ class FetchFile(object):
 
         # Prepare record data for fetching
         for r in records:
-            r.filepath = Path(self._app_config.output_local_path, r.filepath).resolve()
+            if r.to_download:
+                r.filepath = Path(self._app_config.output_local_path, r.filepath).resolve()
 
         # Create output directories
-        dirs = {r.filepath.parent for r in records}
+        dirs = {r.filepath.parent for r in records if r.to_download}
         for dir in dirs:
             dir.mkdir(parents=True, exist_ok=True)
 

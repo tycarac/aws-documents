@@ -11,8 +11,9 @@ from whitepapers.whitepaperTypes import WhitepaperItem
 
 _logger = logging.getLogger(__name__)
 
-_category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
+# _category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
 _desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
+_href_re = re.compile(r'(?:<a\s.*?href\s*=\s*")([^"]*)"[^>].*?>([^<].*?)<', re.IGNORECASE)
 
 
 # _____________________________________________________________________________
@@ -28,13 +29,9 @@ class FetchWhitepaperList(FetchList):
         adfields = item['additionalFields']
         name = item['name']
         title = adfields['docTitle']
-        category = m.group(1).lower() if (m := _category_re.search(adfields['description'])) else None
         content_type = adfields['contentType']
         feature_flag = adfields.get('featureFlag', None)
-
-        # Extract text up to HTML tag from "description" and normalize whitespacing
-        desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else ''
-        description = ' '.join(desc.split())
+        primary_url = adfields['primaryURL'].split('?')[0]
 
         # Derive date from datetime (not raw from JSON data file)
         date_created = datetime.date(parser.parse(item['dateCreated']))
@@ -43,16 +40,25 @@ class FetchWhitepaperList(FetchList):
         date_published = datetime.date(parser.parse(adfields['datePublished']))
         date_sort = datetime.date(parser.parse(adfields['sortDate']))
 
-        # Extract paths
-        url = adfields['primaryURL'].split('?')[0]
-        filename = FetchList.build_filename(title, date_sort, url)
-        rel_filepath = Path(content_type, filename) if category else Path(filename)
+        # Extract text up to HTML tag from "description" and normalize whitespacing
+        _logger.debug(f'>>> description {adfields["description"]}')
+        desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else ''
+        description = ' '.join(desc.split())
 
-        # Derived
-        to_download = category in ['pdf']
+        # Extract links from "description"
+        hrefs = _href_re.findall(adfields["description"])
+        url, filename, rel_filepath, to_download = None, None, None, False
+        for h in hrefs:
+            if h[1].strip().lower() in ['pdf']:
+                url = h[0].split('?')[0]
+                filename = FetchList.build_filename(title, date_sort, url)
+                rel_filepath = Path(content_type, filename)
+                to_download = True
+                break
+        category = '|'.join([h[1].lower() for h in hrefs])
 
         record = WhitepaperItem(filename, rel_filepath, date_sort, url, to_download, Outcome.nil, Result.nil,
-                    name, title, category, content_type, feature_flag, description,
+                    name, title, category, content_type, feature_flag, description, primary_url,
                     date_created, date_updated, date_published, date_sort)
 
         _logger.debug(f'build_record "{record.title}"')

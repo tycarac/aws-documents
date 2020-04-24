@@ -34,7 +34,7 @@ class CleanOutput:
                 try:
                     os.remove(file_path)
                     delete_record.result = Result.success
-                except Exception as ex:
+                except (PermissionError, OSError):
                     _logger.exception(f'Cannot delete empty file: "{file_path}"')
                 delete_records.append(delete_record)
 
@@ -66,7 +66,7 @@ class CleanOutput:
                     # Move file to archive
                     os.replace(file_path, Path(archive_file_path, file_path.name))
                     delete_record.result = Result.success
-                except OSError:
+                except (PermissionError, OSError):
                     _logger.exception(f'Cannot archive file: "{file_path}"')
 
         return delete_records

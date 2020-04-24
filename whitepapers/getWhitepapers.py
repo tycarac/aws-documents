@@ -9,6 +9,7 @@ from common.common import initialize_logger
 from common.reporting import Reporting
 from common.logTools import MessageFormatter, PathFileHandler
 from common.fetchFile import FetchFile
+
 from whitepapers.fetchWhitepaperList import FetchWhitepaperList
 from whitepapers.whitepaperAppConfig import WhitepaperAppConfig
 from whitepapers.whitepaperTypes import WhitepaperItem

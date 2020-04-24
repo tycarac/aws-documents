@@ -10,7 +10,7 @@ from common.common import FetchRecord, Outcome, Result, str_to_bool
 @dataclass
 class WhitepaperItem(FetchRecord):
     __slots__ = ['filename', 'filepath', 'dateRemote', 'url', 'to_download', 'outcome', 'result',
-                'name', 'title', 'category', 'contentType', 'featureFlag', 'description',
+                'name', 'title', 'category', 'contentType', 'featureFlag', 'description', 'primaryUrl',
                 'dateCreated', 'dateUpdated', 'datePublished', 'dateSort']
 
     name: str
@@ -19,6 +19,7 @@ class WhitepaperItem(FetchRecord):
     contentType: str
     featureFlag: str
     description: str
+    primaryUrl: str
     dateCreated: date
     dateUpdated: date
     datePublished: date
@@ -31,7 +32,8 @@ class WhitepaperItem(FetchRecord):
         return [self.filename, self.filepath, self.dateRemote, self.url, self.to_download,
                     self.outcome.name, self.result.name,
                     self.name, self.title, self.category, self.contentType, self.featureFlag,
-                    self.description, self.dateCreated, self.dateUpdated, self.datePublished, self.dateSort]
+                    self.description, self.primaryUrl,
+                    self.dateCreated, self.dateUpdated, self.datePublished, self.dateSort]
 
     # _____________________________________________________________________________
     @staticmethod
@@ -41,6 +43,6 @@ class WhitepaperItem(FetchRecord):
         """
         return WhitepaperItem(s[0], Path(s[1]), date.fromisoformat(s[2]), s[3], str_to_bool(s[4]),
                     Outcome[s[5]], Result[s[6]],
-                    s[7], s[8], s[9], s[10], s[11], s[12],
-                    date.fromisoformat(s[13]), date.fromisoformat(s[14]) if s[14] else None,
-                    date.fromisoformat(s[15]), date.fromisoformat(s[16]))
+                    s[7], s[8], s[9], s[10], s[11], s[12], s[13],
+                    date.fromisoformat(s[14]), date.fromisoformat(s[15]) if s[15] else None,
+                    date.fromisoformat(s[16]), date.fromisoformat(s[17]))
