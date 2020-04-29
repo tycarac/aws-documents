@@ -11,7 +11,6 @@ from whitepapers.whitepaperTypes import WhitepaperItem
 
 _logger = logging.getLogger(__name__)
 
-# _category_re = re.compile(r'(?:<a\s[^>]*>)([^<]*)</a>', re.IGNORECASE)
 _desc_re = re.compile(r'(?:</?p>)?([^<]+)<p>', re.IGNORECASE)
 _href_re = re.compile(r'(?:<a\s.*?href\s*=\s*")([^"]*)"[^>].*?>([^<].*?)<', re.IGNORECASE)
 
@@ -41,7 +40,6 @@ class FetchWhitepaperList(FetchList):
         date_sort = datetime.date(parser.parse(adfields['sortDate']))
 
         # Extract text up to HTML tag from "description" and normalize whitespacing
-        _logger.debug(f'>>> description {adfields["description"]}')
         desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else ''
         description = ' '.join(desc.split())
 

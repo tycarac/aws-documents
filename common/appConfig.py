@@ -17,7 +17,7 @@ class AppConfig(ABC):
         """Initialises the configuration class
         """
 
-        # Run application
+        # Load common App config file
         config_file_path = Path(__file__).with_suffix('.config.json')
         _logger.debug(f'Config file: {config_file_path}')
         with config_file_path as f:
