@@ -70,7 +70,7 @@ class FetchItem(object):
         _logger.debug(f'> {id:4d} __fetch_file')
 
         try:
-            output_base_local_path = self._app_config.output_base_local_path
+            output_base_local_path = self._app_config.downloads_base_path
             rel_path = record.filepath.relative_to(output_base_local_path)
             _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
             _logger.debug(f'> {id:4d} GET:        {record.url}')
@@ -116,9 +116,9 @@ class FetchItem(object):
 
         # Prepare record data for fetching
         for r in records:
-            r.filepath = Path(self._app_config.output_local_path, r.filepath).resolve()
+            r.filepath = Path(self._app_config.downloads_path, r.filepath).resolve()
 
-        # Create output directories
+        # Create downloads directories
         dirs = {r.filepath.parent for r in records}
         for dir in dirs:
             dir.mkdir(parents=True, exist_ok=True)

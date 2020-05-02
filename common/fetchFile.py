@@ -11,7 +11,7 @@ import urllib3
 from common.appConfig import AppConfig
 from common.common import url_client
 from common.metricPrefix import to_decimal_units
-from whitepapers.whitepaperTypes import FetchRecord, Outcome, Result
+from whitepapers.whitepaperTypes import FetchItem, Outcome, Result
 
 _logger = logging.getLogger(__name__)
 _BUFFER_SIZE = 1024 * 1024   # buffer for downloading remote resource
@@ -26,18 +26,17 @@ class FetchFile(object):
         self._app_config = app_config
 
     # _____________________________________________________________________________
-    def __fetch_records(self, records: List[FetchRecord]):
+    def __fetch_records(self, records: List[FetchItem]):
         _logger.debug('__fetch')
 
         record_docs = list(filter(lambda r: r.to_download, records))
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future_entry = {executor.submit(self.__fetch_record, rec, id) for id, rec in enumerate(record_docs)}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            future_entry = {executor.submit(self.__fetch_record, rec, id) for id, rec in enumerate(record_docs, 1)}
             for future in concurrent.futures.as_completed(future_entry):
                 record, id = future.result()
 
     # _____________________________________________________________________________
-    def __fetch_record(self, record: FetchRecord, id: int):
+    def __fetch_record(self, record: FetchItem, id: int):
         _logger.debug(f'> {id:4d} __fetch_item')
         record.result = Result.error
         record.outcome = Outcome.nil
@@ -59,11 +58,11 @@ class FetchFile(object):
         return record, id
 
     # _____________________________________________________________________________
-    def __fetch_file(self, record: FetchRecord, is_file_exists: bool, id: int):
+    def __fetch_file(self, record: FetchItem, is_file_exists: bool, id: int):
         _logger.debug(f'> {id:4d} __fetch_file')
 
         try:
-            output_base_local_path = self._app_config.output_base_local_path
+            output_base_local_path = self._app_config.downloads_base_path
             rel_path = record.filepath.relative_to(output_base_local_path)
             _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
             _logger.debug(f'> {id:4d} GET:        {record.url}')
@@ -163,9 +162,9 @@ class FetchFile(object):
         # Prepare record data for fetching
         for r in records:
             if r.to_download:
-                r.filepath = Path(self._app_config.output_local_path, r.filepath).resolve()
+                r.filepath = Path(self._app_config.downloads_path, r.filepath).resolve()
 
-        # Create output directories
+        # Create downloads directories
         dirs = {r.filepath.parent for r in records if r.to_download}
         for dir in dirs:
             dir.mkdir(parents=True, exist_ok=True)

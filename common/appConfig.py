@@ -13,32 +13,34 @@ class AppConfig(ABC):
     _base_url = 'https://docs.aws.amazon.com/'
 
     # _____________________________________________________________________________
-    def __init__(self, main_path: Path):
+    def __init__(self, app_path: Path, output_path: Path):
         """Initialises the configuration class
         """
+        _logger.debug(f'__init__ app_path "{app_path}"')
+
+        # Initialize
+        self._name = app_path.stem
+        self._base_path = output_path
 
         # Load common App config file
         config_file_path = Path(__file__).with_suffix('.config.json')
-        _logger.debug(f'Config file: {config_file_path}')
-        with config_file_path as f:
-            config_settings = json.loads(f.read_text())
-
-        # Initialize
-        self._name = main_path.stem
+        _logger.debug(f'Config file: "{config_file_path}"')
+        with config_file_path as fp:
+            config_settings = json.loads(fp.read_text())
         cache_settings = config_settings['cache']
         output_settings = config_settings['local']
 
         # Cache
-        self._cache_base_path = Path(cache_settings['localPath']).resolve()
+        self._cache_base_path = Path(self._base_path, cache_settings['localPath']).resolve()
         self._cache_path = Path(self._cache_base_path, self._name).resolve()
         self._cache_age_sec = int(cache_settings.get('age', 300))
 
         # Output
-        self._output_base_local_path = Path(output_settings['localPath']).resolve()
-        self._output_local_path = Path(self._output_base_local_path, self._name).resolve()
+        self._downloads_base_path = Path(self._base_path, output_settings['localPath']).resolve()
+        self._downloads_path = Path(self._downloads_base_path, self._name).resolve()
 
         # Archive
-        self._archive_path = self._output_local_path.joinpath(output_settings['archiveName']).resolve()
+        self._archive_path = Path(self._downloads_path, output_settings['archiveName']).resolve()
 
         # Files
         self._summary_file_path = Path(self._cache_path, self._name + '.summary.json').resolve()
@@ -82,13 +84,13 @@ class AppConfig(ABC):
 
     # _____________________________________________________________________________
     @property
-    def output_base_local_path(self):
-        return self._output_base_local_path
+    def downloads_base_path(self):
+        return self._downloads_base_path
 
     # _____________________________________________________________________________
     @property
-    def output_local_path(self):
-        return self._output_local_path
+    def downloads_path(self):
+        return self._downloads_path
 
     # _____________________________________________________________________________
     @property

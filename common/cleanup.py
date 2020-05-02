@@ -24,11 +24,11 @@ class CleanOutput:
         _logger.debug('__delete_empty_files')
 
         # Check for extra or empty files
-        file_paths = sorted(self._app_config.output_local_path.glob('**/*.*'))
+        file_paths = sorted(self._app_config.downloads_path.glob('**/*.*'))
         delete_records = []
         for file_path in file_paths:
             if file_path.stat().st_size == 0:
-                _logger.warning(f'- Delete empty file: "{file_path.relative_to(self._app_config.output_base_local_path)}"')
+                _logger.warning(f'- Delete empty file: "{file_path.relative_to(self._app_config.downloads_base_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.deleted, Result.error)
                 try:
@@ -45,7 +45,7 @@ class CleanOutput:
         _logger.debug('__archive_extra_files')
 
         # Derive file paths from records and local directory
-        local_file_paths = sorted(self._app_config.output_local_path.rglob('*.*'))
+        local_file_paths = sorted(self._app_config.downloads_path.rglob('*.*'))
         _logger.debug(f'Number files: local, remote: {len(local_file_paths)}, {len(fetch_paths)}')
 
         archive_file_path = self._app_config.archive_path
@@ -58,7 +58,7 @@ class CleanOutput:
         if archive_file_paths:
             self._app_config.archive_path.mkdir(parents=True, exist_ok=True)
             for file_path in archive_file_paths:
-                _logger.info(f'-      archiving: "{file_path.relative_to(self._app_config.output_base_local_path)}"')
+                _logger.info(f'-      archiving: "{file_path.relative_to(self._app_config.downloads_base_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.archived, Result.error)
                 delete_records.append(delete_record)
@@ -89,6 +89,6 @@ class CleanOutput:
         delete_records = []
         delete_records.extend(self.__delete_empty_files())
         delete_records.extend(self.__archive_extra_files(fetch_paths))
-        self.__delete_empty_directories(self._app_config.output_local_path)
+        self.__delete_empty_directories(self._app_config.downloads_path)
 
         return delete_records

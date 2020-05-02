@@ -15,6 +15,7 @@ __pycache__/
 
 # Processing paths
 cache/
+downloads/
 logs/
 output/
 temp/

@@ -55,8 +55,8 @@ class FetchWhitepaperList(FetchList):
                 break
         category = '|'.join([h[1].lower() for h in hrefs])
 
-        record = WhitepaperItem(filename, rel_filepath, date_sort, url, to_download, Outcome.nil, Result.nil,
-                    name, title, category, content_type, feature_flag, description, primary_url,
+        record = WhitepaperItem(title, date_sort, filename, rel_filepath, url, to_download, Outcome.nil, Result.nil,
+                    name, category, content_type, feature_flag, description, primary_url,
                     date_created, date_updated, date_published, date_sort)
 
         _logger.debug(f'build_record "{record.title}"')

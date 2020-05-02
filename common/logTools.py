@@ -13,7 +13,7 @@ from sys import exc_info
 
 # _____________________________________________________________________________
 class NoExceptionFormatter(Formatter):
-    """Remove exception details from logger formatter so to declutter log output
+    """Remove exception details from logger formatter so to declutter log downloads
     """
     def format(self, record: LogRecord):
         record.exc_text = ''
@@ -25,7 +25,7 @@ class NoExceptionFormatter(Formatter):
 
 # _____________________________________________________________________________
 class MessageFormatter(Formatter):
-    """Remove all exception details from logger formatter except for message so to declutter log output
+    """Remove all exception details from logger formatter except for message so to declutter log downloads
     """
     def format(self, record: LogRecord):
         record.exc_text = ''
@@ -38,7 +38,7 @@ class MessageFormatter(Formatter):
 
 # _____________________________________________________________________________
 class OneLineFormatter(Formatter):
-    """Covert exception details to single line to simplify log output processing
+    """Covert exception details to single line to simplify log downloads processing
     """
     def format(self, record: LogRecord):
         if text := super().format(record):

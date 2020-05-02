@@ -48,9 +48,10 @@ class FetchBuildersList(FetchList):
         to_download = True if download_url else False
         date_remote = date_updated if date_updated else date_created
 
-        record = BuildersItem(filename, rel_filepath, date_remote, download_url, to_download, Outcome.nil, Result.nil,
-                    name, learning_level, headline, date_updated, date_created, content_type,
+        record = BuildersItem(headline, date_remote, filename, rel_filepath, download_url, to_download,
+                    Outcome.nil, Result.nil,
+                    name, learning_level, date_updated, date_created, content_type,
                     download_url, video_url, description)
 
-        _logger.debug(f'build_record "{record.headline}"')
+        _logger.debug(f'build_record "{record.title}"')
         return record

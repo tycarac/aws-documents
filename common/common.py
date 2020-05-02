@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from datetime import date
 import logging.config, logging.handlers
 import os
 from pathlib import Path
+import time
 from typing import List, Any
 import tzlocal
 import urllib3
@@ -50,11 +52,13 @@ class Result(Enum):
 # _____________________________________________________________________________
 # Data classes
 @dataclass
-class FetchRecord(ABC):
-    __slots__ = ['filename', 'filepath', 'dateRemote', 'url', 'to_download', 'outcome', 'result']
+class FetchItem(ABC):
+    __slots__ = ['title', 'dateRemote', 'filename', 'filepath', 'url', 'to_download', 'outcome', 'result']
+
+    title: str
+    dateRemote: date
     filename: str
     filepath: Path
-    dateRemote: date
     url: str
     to_download: bool
     outcome: Outcome
@@ -65,7 +69,7 @@ class FetchRecord(ABC):
     def to_list(self) -> List[Any]:
         """Return list of the instance attribute values.
         """
-        return [self.filename, self.filepath, self.dateRemote, self.url, self.to_download,
+        return [self.title, self.dateRemote, self.filename, self.filepath, self.url, self.to_download,
                     self.outcome.name, self.result.name]
 
     # _____________________________________________________________________________
@@ -75,8 +79,8 @@ class FetchRecord(ABC):
         """Create an instance of the dataclass from a list os strings.  For simplicity, instead of introspecting
          the dataclass for field types, the function is manually synchronized (similar to __slots__).
         """
-        return FetchRecord(s[0], Path(s[1]), date.fromisoformat(s[2]), s[3], str_to_bool(s[4]),
-                    Outcome[s[5]], Result[s[6]])
+        return FetchItem(s[0], date.fromisoformat(s[1]), s[2], Path(s[3]), s[4], str_to_bool(s[5]),
+                    Outcome[s[6]], Result[s[7]])
 
 
 # _____________________________________________________________________________
@@ -92,13 +96,19 @@ class DeleteRecord:
 
 
 # _____________________________________________________________________________
-def initialize_logger(main_path: Path):
-    logger_config_path = main_path.with_suffix('.logging.json')
-    _logger.debug(f'Config file: {logger_config_path}')
+def initialize_logger(app_path: Path, start_datetime: datetime = None):
+    if not start_datetime:
+        start_datetime = datetime.fromtimestamp(time.time())
+
+    # Load log configuration
+    logger_config_path = app_path.with_suffix('.logging.json')
     with logger_config_path as p:
         import json
         logging.captureWarnings(True)
         logging.config.dictConfig(json.loads(p.read_text()))
+
+    _logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
+    _logger.debug(f'Config file: "{logger_config_path}"')
     _logger.debug(f'CPU count: {os.cpu_count()}')
 
 

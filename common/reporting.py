@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Type
 
 from common.appConfig import AppConfig
-from common.common import DeleteRecord, Outcome, Result, FetchRecord
+from common.common import DeleteRecord, Outcome, Result, FetchItem
 
 # Common variables
 _logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ _CSV_BACKUP_SUFFIX = '.bak.csv'
 
 class Reporting:
     # _____________________________________________________________________________
-    def __init__(self, frecs: List[FetchRecord], cls, drecs: List[DeleteRecord],
+    def __init__(self, frecs: List[FetchItem], cls, drecs: List[DeleteRecord],
                 app_config: AppConfig):
         self._frecs = frecs
         self._cls = cls
@@ -40,6 +40,8 @@ class Reporting:
             results = rows.values()
         else:
             results = self._frecs
+
+        # Sort report (but only use fields from base class)
         sorted(results, key=attrgetter('contentType', 'dateRemote', 'title'), reverse=True)
 
         return results

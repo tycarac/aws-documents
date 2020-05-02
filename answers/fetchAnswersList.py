@@ -51,10 +51,10 @@ class FetchAnswersList(FetchList):
         # Derived
         to_download = True if url else False
 
-        record = AnswersItem(filename, rel_filepath, date_sort, url, to_download, Outcome.nil, Result.nil,
-                    name, category, content_type, feature_flag, headline, sub_headline, description,
+        record = AnswersItem(headline, date_sort, filename, rel_filepath, url, to_download, Outcome.nil, Result.nil,
+                    name, category, content_type, feature_flag, sub_headline, description,
                     date_created, date_updated, date_sort)
 
-        _logger.debug(f'build_record "{record.headline}"')
+        _logger.debug(f'build_record "{record.title}"')
         return record
 

@@ -22,7 +22,7 @@ _CSV_BACKUP_SUFFIX = '.bak.csv'
 # _____________________________________________________________________________
 def process(app_config: AppConfig):
     _logger.debug('process')
-    _logger.info(f'Output path: "{app_config.output_local_path}')
+    _logger.info(f'Downloads path: "{app_config.downloads_path}"')
 
     fdl = FetchBuildersList(app_config)
     fetch_records = fdl.build_list()
@@ -45,15 +45,15 @@ def process(app_config: AppConfig):
 # _____________________________________________________________________________
 def main():
     start_time = time.time()
-    main_path = Path(__file__)
+    app_path = Path(__file__)
     try:
         # Configure logging
-        initialize_logger(main_path)
+        initialize_logger(app_path)
         start_datetime = datetime.fromtimestamp(start_time)
         _logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
 
         # Run application
-        process(BuildersAppConfig(main_path))
+        process(BuildersAppConfig(app_path, app_path.parents[1]))
     except Exception as ex:
         _logger.exception('Catch all exception')
     finally:
