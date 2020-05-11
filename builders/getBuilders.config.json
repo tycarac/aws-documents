@@ -9,5 +9,8 @@
       "item.locale": "en_US",
       "tags.id": "!amazon-redwood%23content-type%23video"
     }
+  },
+  "cache": {
+    "age": "21600"
   }
 }

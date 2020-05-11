@@ -55,7 +55,7 @@ class FetchList(ABC):
 
     # _____________________________________________________________________________
     def __fetch_list_page(self, page_num: int, fields: Mapping[str, str]):
-        _logger.info(f'  fetch list page {page_num:3d}')
+        _logger.info(f'  fetch list: page {page_num:3d}')
         list_page, cache_pf = None, None
         hits_total, count = 0, 0
 

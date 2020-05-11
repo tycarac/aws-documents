@@ -12,8 +12,8 @@ _logger = logging.getLogger(__name__)
 class WhitepaperAppConfig(AppConfig):
 
     # _____________________________________________________________________________
-    def __init__(self, app_path: Path, output_path: Path):
-        super().__init__(app_path, output_path)
+    def __init__(self, app_path: Path, output_root: Path):
+        super().__init__(app_path, output_root)
 
         # Run application
         config_file_path = app_path.with_suffix('.config.json')
@@ -22,10 +22,14 @@ class WhitepaperAppConfig(AppConfig):
             config_settings = json.loads(f.read_text())
 
         remote_settings = config_settings['remote']
+        cache_settings = config_settings['cache']
 
         # Remote URL
         self._source_url = remote_settings['urlLoc']
         self._source_parameters = remote_settings['urlParameters']
+
+        # Cache
+        self._cache_age_sec = int(cache_settings.get('age', 300))
 
     # _____________________________________________________________________________
     @property
@@ -36,3 +40,9 @@ class WhitepaperAppConfig(AppConfig):
     @property
     def source_parameters(self):
         return self._source_parameters
+
+    # _____________________________________________________________________________
+    @property
+    def cache_age_sec(self):
+        return self._cache_age_sec
+

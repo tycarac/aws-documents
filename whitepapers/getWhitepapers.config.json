@@ -8,5 +8,8 @@
       "size": "15",
       "item.locale": "en_US"
     }
+  },
+  "cache": {
+    "age": "21600"
   }
 }

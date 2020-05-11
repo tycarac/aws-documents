@@ -7,7 +7,7 @@ import logging.config, logging.handlers
 import os
 from pathlib import Path
 import time
-from typing import List, Any
+from typing import List, Any, Union
 import tzlocal
 import urllib3
 
@@ -113,5 +113,6 @@ def initialize_logger(app_path: Path, start_datetime: datetime = None):
 
 
 # _____________________________________________________________________________
-def str_to_bool(s: str) -> bool:
-    return s.lower() in ('true', 't', 'yes', '1')
+def str_to_bool(s: Union[str, bool]) -> bool:
+    return s if type(s) is bool else s.lower() in ('true', 't', 'yes', '1')
+

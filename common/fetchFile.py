@@ -62,8 +62,8 @@ class FetchFile(object):
         _logger.debug(f'> {id:4d} __fetch_file')
 
         try:
-            output_base_local_path = self._app_config.downloads_base_path
-            rel_path = record.filepath.relative_to(output_base_local_path)
+            downloads_path = self._app_config.downloads_path
+            rel_path = record.filepath.relative_to(downloads_path)
             _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
             _logger.debug(f'> {id:4d} GET:        {record.url}')
 
