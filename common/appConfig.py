@@ -39,6 +39,8 @@ class AppConfig(ABC):
         # Ensure directories pre-exist
         self._downloads_path.mkdir(parents=True, exist_ok=True)
         self._cache_path.mkdir(parents=True, exist_ok=True)
+        _logger.debug(f'cache_path "{self._cache_path}"')
+        _logger.debug(f'downloads_path "{self._downloads_path}"')
 
     # _____________________________________________________________________________
     @property

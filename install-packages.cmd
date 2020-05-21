@@ -13,6 +13,7 @@ python -m venv ".\.venv"
 )
 echo Activating virtual environment ...
 call .venv\Scripts\activate
+python.exe --version
 
 REM ___________________________________________________________________________
 REM List Python packages
@@ -44,7 +45,11 @@ echo %cmd% | tee.exe -a %logfile%
 
 REM ___________________________________________________________________________
 REM Install/Update packeages from requirements
-if not exist "requirements.txt" goto :eof
+if not exist "requirements.txt" (
+echo. | tee.exe -a %logfile%
+echo "requirements.txt" not found | tee.exe -a %logfile%
+goto :eof
+)
 
 REM Update using requirements.txt file
 set cmd=python -m pip install --no-color --compile --upgrade-strategy eager --upgrade --requirement requirements.txt

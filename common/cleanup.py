@@ -28,7 +28,7 @@ class CleanOutput:
         delete_records = []
         for file_path in file_paths:
             if file_path.stat().st_size == 0:
-                _logger.warning(f'- Delete empty file: "{file_path.relative_to(self._app_config.downloads_base_path)}"')
+                _logger.warning(f'- Delete empty file: "{file_path.relative_to(self._app_config.downloads_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.deleted, Result.error)
                 try:
@@ -58,7 +58,7 @@ class CleanOutput:
         if archive_file_paths:
             self._app_config.archive_path.mkdir(parents=True, exist_ok=True)
             for file_path in archive_file_paths:
-                _logger.info(f'-      archiving: "{file_path.relative_to(self._app_config.downloads_base_path)}"')
+                _logger.info(f'-      archiving: "{file_path.relative_to(self._app_config.downloads_path)}"')
                 delete_record = DeleteRecord(file_path.parent.name, date.today(), file_path.name, file_path,
                             Outcome.archived, Result.error)
                 delete_records.append(delete_record)

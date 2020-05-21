@@ -2,18 +2,14 @@
 # https://git-scm.com/docs/gitignore
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cd]
-*$py.class
-
 # Non-source files
 *.log
 *.bak
 *.bak.*
 *.tmp
 
-# Processing paths
+# Project paths
+build/
 cache/
 downloads/
 logs/
@@ -21,12 +17,20 @@ output/
 temp/
 tmp/
 
-# Data
-dataset/
+# Data paths
+data/
 
-# Tools
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cd]
+*$py.class
+
+# Development Tools
 .idea/
-.vscode
+.vscode/
+.terraform
+
+# Python
 .pytest_cache/
 .nox/
 .tox/
@@ -34,11 +38,8 @@ dataset/
 .coverage
 .coverage.*
 
-# Environments
+# Python Environments
 .env/
 env/
-env.bak/
 .venv/
 venv/
-venv.bak/
-ENV/
