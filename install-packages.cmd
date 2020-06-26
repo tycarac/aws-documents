@@ -2,39 +2,35 @@
 setlocal
 del /s/q *.bak >nul 2>&1
 
-set logfile=install-python-packages.log
-del /q %logfile% >nul 2>&1
-
-
 REM ___________________________________________________________________________
 REM Output Python version outside virtual environment
-python.exe --version | tee.exe -a %logfile%
+python.exe --version
 
 REM ___________________________________________________________________________
 REM Create virtural environment
 if not exist ".\.venv" (
 echo Creating virtual environment ...
-python -m venv ".\.venv" | tee.exe -a %logfile%
+python -m venv ".\.venv"
 )
 echo Activating virtual environment ...
-call .venv\Scripts\activate | tee.exe -a %logfile%
+call .venv\Scripts\activate
 
 REM Output Python version inside virtual environment
-python.exe --version | tee.exe -a %logfile%
+python.exe --version
 
 REM ___________________________________________________________________________
 REM List Python packages
 set cmd=python -m pip list --no-color
-echo. | tee.exe -a %logfile%
-echo %cmd% | tee.exe -a %logfile%
-%cmd% | tee.exe -a %logfile%
+echo.
+echo %cmd%
+%cmd%
 
 REM ___________________________________________________________________________
 REM List outdated Python packages
 set cmd=python -m pip list --no-color --outdated
-echo. | tee.exe -a %logfile%
-echo %cmd% | tee.exe -a %logfile%
-%cmd% | tee.exe -a %logfile%
+echo.
+echo %cmd%
+%cmd%
 
 REM ___________________________________________________________________________
 REM Install/update install Python packages
@@ -42,34 +38,34 @@ REM Install/update "pip" first, then "setup", "wheel"
 REM Pip "list" output from default Python 3.8.1 install is: "pip", "setuptools"
 REM https://packaging.python.org/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date
 set cmd=python -m pip install --no-color --compile --upgrade pip
-echo. | tee.exe -a %logfile%
-echo %cmd% | tee.exe -a %logfile%
-%cmd% | tee.exe -a %logfile%
+echo.
+echo %cmd%
+%cmd%
 set cmd=python -m pip install --no-color --compile --upgrade setuptools wheel
-echo. | tee.exe -a %logfile%
-echo %cmd% | tee.exe -a %logfile%
-%cmd% | tee.exe -a %logfile%
+echo.
+echo %cmd%
+%cmd%
 
 REM ___________________________________________________________________________
 REM Install/Update packeages from requirements
 if not exist "requirements.txt" (
-echo. | tee.exe -a %logfile%
-echo "requirements.txt" not found | tee.exe -a %logfile%
+echo.
+echo "requirements.txt" not found
 goto :eof
 )
 
 REM Update using requirements.txt file
 set cmd=python -m pip install --no-color --compile --upgrade-strategy eager --upgrade --requirement requirements.txt
-echo. | tee.exe -a %logfile%
-echo %cmd% | tee.exe -a %logfile%
-%cmd% | tee.exe -a %logfile%
+echo.
+echo %cmd%
+%cmd%
 
 REM Output Python version inside virtual environment
-echo. | tee.exe -a %logfile%
-python.exe --version | tee.exe -a %logfile%
+echo.
+python.exe --version
 
 REM List Python (updated) packages
 set cmd=python -m pip list --no-color
-echo. | tee.exe -a %logfile%
-echo %cmd% | tee.exe -a %logfile%
-%cmd% | tee.exe -a %logfile%
+echo.
+echo %cmd%
+%cmd%

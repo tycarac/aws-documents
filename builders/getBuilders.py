@@ -9,7 +9,7 @@ from common.cleanup import CleanOutput
 from common.common import initialize_logger
 from common.reporting import Reporting
 from common.logTools import MessageFormatter, PathFileHandler
-from common.fetchFile import FetchFile
+from common.fetchFiles import FetchFiles
 from builders.fetchBuildersList import FetchBuildersList
 from builders.buildersAppConfig import BuildersAppConfig
 from builders.buildersTypes import BuildersItem
@@ -29,7 +29,7 @@ def process(app_config: AppConfig):
 
     delete_records = []
     try:
-        fd = FetchFile(app_config)
+        fd = FetchFiles(app_config)
         fd.process(fetch_records)
 
         co = CleanOutput(app_config)

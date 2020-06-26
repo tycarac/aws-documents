@@ -18,7 +18,7 @@ _BUFFER_SIZE = 1024 * 1024   # buffer for downloading remote resource
 
 
 # _____________________________________________________________________________
-class FetchFile(object):
+class FetchFiles(object):
 
     # _____________________________________________________________________________
     def __init__(self, app_config: AppConfig):
@@ -31,8 +31,8 @@ class FetchFile(object):
 
         record_docs = list(filter(lambda r: r.to_download, records))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            future_entry = {executor.submit(self.__fetch_record, rec, id) for id, rec in enumerate(record_docs, 1)}
-            for future in concurrent.futures.as_completed(future_entry):
+            future_entries = {executor.submit(self.__fetch_record, rec, id) for id, rec in enumerate(record_docs, 1)}
+            for future in concurrent.futures.as_completed(future_entries):
                 record, id = future.result()
 
     # _____________________________________________________________________________
@@ -67,7 +67,7 @@ class FetchFile(object):
             _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
             _logger.debug(f'> {id:4d} GET:        {record.url}')
 
-            rsp_status, fetch_time = FetchFile.__stream_response(record.url, record.filepath, id)
+            rsp_status, fetch_time = FetchFiles.__stream_response(record.url, record.filepath, id)
             if rsp_status == 200:
                 record.result = Result.success
                 record.outcome = Outcome.updated if is_file_exists else Outcome.created
