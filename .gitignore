@@ -3,40 +3,51 @@
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 
 # Non-source files
-*.log
 *.bak
 *.bak.*
+*.backup
+*.log
 *.tmp
 
-# Project paths
+# Project paths / files
 build/
 cache/
-downloads/
 logs/
+out/
 output/
 temp/
 tmp/
 
-# Data paths
+# Data paths / files
+*.sqlite
 data/
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cd]
-*$py.class
-
-# Development Tools
+# IDEs paths / files
+*.code-workspace
 .idea/
 .vscode/
-.terraform
 
+# Development paths / files
+*.tfstate
+.terraform/
+.terragrunt-cache/
+.antlr/
+
+# _____________________________________________________________________________
 # Python
+*.cover
 .pytest_cache/
 .nox/
 .tox/
 .cache
 .coverage
 .coverage.*
+
+# Python byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cd]
+*$py.class
+*.so
 
 # Python Environments
 .env/

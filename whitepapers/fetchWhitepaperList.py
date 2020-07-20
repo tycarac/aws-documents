@@ -28,7 +28,7 @@ class FetchWhitepaperList(FetchList):
         adfields = item['additionalFields']
         name = item['name']
         title = adfields['docTitle']
-        content_type = adfields['contentType']
+        content_type = adfields.get('contentType', '')
         feature_flag = adfields.get('featureFlag', None)
         primary_url = adfields['primaryURL'].split('?')[0]
 
