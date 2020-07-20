@@ -10,8 +10,10 @@
 *.tmp
 
 # Project paths / files
+archive/
 build/
 cache/
+downloads/
 logs/
 out/
 output/
