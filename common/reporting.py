@@ -42,7 +42,7 @@ class Reporting:
             results = self._frecs
 
         # Sort report (but only use fields from base class)
-        sorted(results, key=attrgetter('contentType', 'dateRemote', 'title'), reverse=True)
+        results = sorted(results, key=attrgetter('contentType', 'dateRemote', 'title'), reverse=True)
 
         return results
 
@@ -63,8 +63,8 @@ class Reporting:
             with data_path.open(mode='w', newline='') as out:
                 csv_writer = csv.writer(out, quoting=csv.QUOTE_MINIMAL)
                 csv_writer.writerow(self._cls.__slots__)
-                for r in merged_records:
-                    csv_writer.writerow(r.to_list())
+                for mr in merged_records:
+                    csv_writer.writerow(mr.to_list())
 
         except Exception as ex:
             _logger.exception(f'Error writing report file: "{data_path}"')
