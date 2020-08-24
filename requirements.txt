@@ -1,4 +1,4 @@
-urllib3
 python-dateutil
 pytz
 tzlocal
+urllib3[brotli]

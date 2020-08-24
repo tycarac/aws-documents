@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import date
-import json
 import logging.handlers
 from pathlib import Path
 

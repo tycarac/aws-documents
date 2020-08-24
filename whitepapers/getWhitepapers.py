@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import logging.handlers
 from pathlib import Path
 import time
+from typing import List
 
 from common.appConfig import AppConfig
 from common.cleanup import CleanOutput
@@ -20,21 +21,41 @@ _CSV_BACKUP_SUFFIX = '.bak.csv'
 
 
 # _____________________________________________________________________________
+def clean_output(fetch_records: List[WhitepaperItem], app_config: AppConfig):
+    _logger.debug('clean_output')
+
+    co = CleanOutput(app_config)
+    fetch_paths = {r.filepath for r in fetch_records}
+    delete_records = co.process(fetch_paths)
+    return delete_records
+
+
+# _____________________________________________________________________________
+def fetch_files(fetch_records: List[WhitepaperItem], app_config: AppConfig):
+    _logger.debug('fetch_files')
+
+    fd = FetchFiles(app_config)
+    fd.process(fetch_records)
+
+
+# _____________________________________________________________________________
+def build_record_list(app_config: AppConfig):
+    _logger.debug('build_record_list')
+
+    fdl = FetchWhitepaperList(app_config)
+    return fdl.build_list()
+
+
+# _____________________________________________________________________________
 def process(app_config: AppConfig):
     _logger.debug('process')
     _logger.info(f'Output path: "{app_config.downloads_path}"')
 
-    fdl = FetchWhitepaperList(app_config)
-    fetch_records = fdl.build_list()
-
+    fetch_records = build_record_list(app_config)
     delete_records = []
     try:
-        fd = FetchFiles(app_config)
-        fd.process(fetch_records)
-
-        co = CleanOutput(app_config)
-        fetch_paths = {r.filepath for r in fetch_records}
-        delete_records = co.process(fetch_paths)
+        fetch_files(fetch_records, app_config)
+        delete_records = clean_output(fetch_records, app_config)
     finally:
         reporting = Reporting(fetch_records, WhitepaperItem, delete_records, app_config)
         reporting.export_fetch_results()
