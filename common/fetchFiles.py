@@ -6,10 +6,10 @@ from pathlib import Path
 import shutil
 import time
 from typing import List
-import urllib3
+from urllib3 import exceptions, make_headers, HTTPResponse, Retry, PoolManager, Timeout
 
 from common.appConfig import AppConfig
-from common.common import url_client
+from common.common import local_tz
 from common.metricPrefix import to_decimal_units
 from whitepapers.whitepaperTypes import FetchItem, Outcome, Result
 
@@ -24,6 +24,10 @@ class FetchFiles(object):
     def __init__(self, app_config: AppConfig):
         _logger.debug('__init__')
         self._app_config = app_config
+
+        url_headers = make_headers(keep_alive=True, accept_encoding='gzip, deflate, br')
+        url_retries = Retry(total=4, backoff_factor=3, status_forcelist=[500, 502, 503, 504])
+        self.url_client = PoolManager(timeout=Timeout(total=15.0), retries=url_retries, block=True, headers=url_headers)
 
     # _____________________________________________________________________________
     def __fetch_records(self, records: List[FetchItem]):
@@ -46,7 +50,7 @@ class FetchFiles(object):
         _logger.debug(f'> {id:4d} exists:     {str(is_file_exists):<5s}: "{record.filename}"')
         if is_file_exists:
             # Check file age
-            local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime))
+            local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime, local_tz))
             remote_date = record.dateRemote
             _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {remote_date}')
             if local_date >= remote_date:
@@ -90,22 +94,21 @@ class FetchFiles(object):
             _logger.exception(f'> {id:4d} generic exception')
 
     # _____________________________________________________________________________
-    @staticmethod
-    def __get_response(url: str, filepath: Path, id: int):
+    def __get_response(self, url: str, filepath: Path, id: int):
         # Must call release_conn() after file copied but opening/writing exception is possible
         rsp = None
         fetch_time = timedelta()
         try:
             redirect_count = 3
             start_time = time.time()
-            rsp = url_client.request('GET', url, preload_content=False)
+            rsp = self.url_client.request('GET', url, preload_content=False)
             _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
-            while rsp.status in urllib3.HTTPResponse.REDIRECT_STATUSES and redirect_count > 0:
+            while rsp.status in HTTPResponse.REDIRECT_STATUSES and redirect_count > 0:
                 if location := rsp.headers.get('location', None):
                     _logger.debug(f'> {id:4d} redirct:      {url} --> {location}')
                     url = location
                     rsp.release_conn()
-                    rsp = url_client.request('GET', location, preload_content=False)
+                    rsp = self.url_client.request('GET', location, preload_content=False)
                 else:
                     raise RuntimeError('Response header "location" not found')
             if rsp.status == 200:
@@ -113,7 +116,7 @@ class FetchFiles(object):
                 with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
                     shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
             fetch_time = time.time() - start_time
-        except urllib3.exceptions.HTTPError as ex:
+        except exceptions.HTTPError as ex:
             _logger.exception(f'> {id:4d} HTTP error')
         except Exception as ex:
             _logger.exception('Unexpected')
@@ -125,20 +128,19 @@ class FetchFiles(object):
         return rsp.status, fetch_time
 
     # _____________________________________________________________________________
-    @staticmethod
-    def __stream_response(url: str, filepath: Path, id: int):
+    def __stream_response(self, url: str, filepath: Path, id: int):
         # Must call release_conn() after file copied but opening/writing exception is possible
         rsp = None
         start_time, fetch_time = time.time(), timedelta()
         try:
-            rsp = url_client.request('GET', url, preload_content=False)
+            rsp = self.url_client.request('GET', url, preload_content=False)
             _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
-            while rsp.status in urllib3.HTTPResponse.REDIRECT_STATUSES:
+            while rsp.status in HTTPResponse.REDIRECT_STATUSES:
                 if location := rsp.headers.get('location', None):
                     _logger.debug(f'> {id:4d} redirct:      "{url} --> {location}')
                     url = location
                     rsp.release_conn()
-                    rsp = url_client.request('GET', url, preload_content=False)
+                    rsp = self.url_client.request('GET', url, preload_content=False)
                     _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
                 else:
                     raise RuntimeError('Response header "location" not found')
@@ -147,7 +149,7 @@ class FetchFiles(object):
                 with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
                     shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
             fetch_time = time.time() - start_time
-        except urllib3.exceptions.HTTPError as ex:
+        except exceptions.HTTPError as ex:
             _logger.exception(f'> {id:4d} HTTP error')
         finally:
             if rsp:

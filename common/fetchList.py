@@ -8,10 +8,10 @@ import pytz
 import time
 from typing import List, Any, Mapping
 from urllib import parse
-from urllib3 import exceptions
+from urllib3 import exceptions, make_headers, Retry, PoolManager, Timeout
 
 from common.appConfig import AppConfig
-from common.common import url_client, local_tz
+from common.common import local_tz
 from common.pathTools import sanitize_filename
 
 _logger = logging.getLogger(__name__)
@@ -24,6 +24,11 @@ class FetchList(ABC):
     def __init__(self, app_config: AppConfig):
         _logger.debug('__init__')
         self._app_config = app_config
+
+        url_headers = make_headers(keep_alive=True, accept_encoding='gzip, deflate, br')
+        url_headers.update({'Accept': 'text/*', 'Accept-Charset': 'utf-8'})
+        url_retries = Retry(total=4, backoff_factor=3, status_forcelist=[500, 502, 503, 504])
+        self.url_client = PoolManager(timeout=Timeout(total=15.0), retries=url_retries, block=True, headers=url_headers)
 
     # _____________________________________________________________________________
     @abstractmethod
@@ -60,7 +65,7 @@ class FetchList(ABC):
         hits_total, count = 0, 0
 
         try:
-            rsp = url_client.request('GET', self._app_config.source_url, fields=fields)
+            rsp = self.url_client.request('GET', self._app_config.source_url, fields=fields)
             _logger.debug(f'> {page_num:4d} response status  {rsp.status}')
             if rsp.status == 200:
                 # extract data

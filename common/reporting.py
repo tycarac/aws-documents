@@ -3,7 +3,6 @@ import csv
 from io import StringIO
 import logging.config
 from operator import attrgetter
-from pathlib import Path
 from typing import List, Type
 
 from common.appConfig import AppConfig
@@ -35,8 +34,8 @@ class Reporting:
                 rows = {r.filename: r for r in [self._cls.from_string(line) for line in csv_reader]}
             for rec in self._frecs:
                 if rec.outcome != Outcome.cached or rec.result != Result.success:
-                    _logger.debug(f'Rec org|new: {rows.get("filename", "")} | {str(rec)}')
-                    rows['filename'] = rec
+                    _logger.debug(f'Rec org|new: {rows.get(rec.filename, "")} | {rec}')
+                    rows[rec.filename] = rec
             results = rows.values()
         else:
             results = self._frecs

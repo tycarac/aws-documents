@@ -61,4 +61,3 @@ class FetchWhitepaperList(FetchList):
 
         _logger.debug(f'build_record "{record.title}"')
         return record
-
