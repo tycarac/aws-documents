@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import List, Any
+import unicodedata
 
 from common.common import FetchItem, Outcome, Result, str_to_bool
 
@@ -23,6 +24,23 @@ class WhitepaperItem(FetchItem):
     dateUpdated: date
     datePublished: date
     dateSort: date
+    
+    # _____________________________________________________________________________
+    def __init__(self, title, dateRemote, filename, filepath, url, to_download, outcome, result,
+                name, category, contentType, featureFlag, description, primaryUrl,
+                dateCreated, dateUpdated, datePublished, dateSort):
+
+        super().__init__(title, dateRemote, filename, filepath, url, to_download, outcome, result)
+        self. name = name
+        self.category = category
+        self.contentType = contentType
+        self.featureFlag = featureFlag
+        self.description = unicodedata.normalize('NFKD', description).encode('UTF-8', 'ignore')
+        self.primaryUrl = primaryUrl
+        self.dateCreated = dateCreated
+        self.dateUpdated = dateUpdated
+        self.datePublished = datePublished
+        self.dateSort = dateSort
 
     # _____________________________________________________________________________
     def to_list(self) -> List[Any]:
