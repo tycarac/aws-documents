@@ -34,44 +34,48 @@ class FetchFiles(object):
         _logger.debug('__fetch')
 
         record_docs = list(filter(lambda r: r.to_download, records))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            future_entries = {executor.submit(self.__fetch_record, rec, id) for id, rec in enumerate(record_docs, 1)}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            future_entries = {executor.submit(self.__fetch_record, rec, i) for i, rec in enumerate(record_docs, 1)}
             for future in concurrent.futures.as_completed(future_entries):
-                record, id = future.result()
+                record, i = future.result()
 
     # _____________________________________________________________________________
-    def __fetch_record(self, record: FetchItem, id: int):
-        _logger.debug(f'> {id:4d} __fetch_item')
-        record.result = Result.error
-        record.outcome = Outcome.nil
+    def __fetch_record(self, record: FetchItem, i: int):
+        try:
+            _logger.debug(f'> {i:4d} __fetch_item')
+            record.result = Result.error
+            record.outcome = Outcome.nil
 
-        # Check file exists and, if so, if old
-        is_file_exists = record.filepath.exists()
-        _logger.debug(f'> {id:4d} exists:     {str(is_file_exists):<5s}: "{record.filename}"')
-        if is_file_exists:
-            # Check file age
-            local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime, local_tz))
-            remote_date = record.dateRemote
-            _logger.debug(f'> {id:4d} date:       local, remote: {local_date}, {remote_date}')
-            if local_date >= remote_date:
-                record.result, record.outcome = Result.success, Outcome.cached
-                _logger.debug(f'> {id:4d} cached:     "{record.filepath.name}"')
-                return record, id
+            # Check file exists and, if so, if old
+            is_file_exists = record.filepath.exists()
+            _logger.debug(f'> {i:4d} exists:     {str(is_file_exists):<5s}: "{record.filename}"')
+            if is_file_exists:
+                # Check file age
+                local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime, local_tz))
+                remote_date = record.dateRemote
+                _logger.debug(f'> {i:4d} date:       local, remote: {local_date}, {remote_date}')
+                if local_date >= remote_date:
+                    record.result, record.outcome = Result.success, Outcome.cached
+                    _logger.debug(f'> {i:4d} cached:     "{record.filepath.name}"')
+                    return record, i
 
-        self.__fetch_file(record, is_file_exists, id)
-        return record, id
+            self.__fetch_file(record, is_file_exists, i)
+        except Exception as ex:
+            _logger.exception(f'> {i:4d} {record.title}')
+
+        return record, i
 
     # _____________________________________________________________________________
-    def __fetch_file(self, record: FetchItem, is_file_exists: bool, id: int):
-        _logger.debug(f'> {id:4d} __fetch_file')
+    def __fetch_file(self, record: FetchItem, is_file_exists: bool, i: int):
+        _logger.debug(f'> {i:4d} __fetch_file')
 
         try:
             downloads_path = self._app_config.downloads_path
             rel_path = record.filepath.relative_to(downloads_path)
-            _logger.info(f'> {id:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
-            _logger.debug(f'> {id:4d} GET:        {record.url}')
+            _logger.info(f'> {i:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
+            _logger.debug(f'> {i:4d} GET:        {record.url}')
 
-            rsp_status, fetch_time = FetchFiles.__stream_response(record.url, record.filepath, id)
+            rsp_status, fetch_time = self.__stream_response(record.url, record.filepath, i)
             if rsp_status == 200:
                 record.result = Result.success
                 record.outcome = Outcome.updated if is_file_exists else Outcome.created
@@ -83,18 +87,18 @@ class FetchFiles(object):
 
                 # Derive file size
                 file_size = record.filepath.stat().st_size
-                _logger.debug(f'> {id:4d} fetch time, size: {fetch_time:.2f}s, {to_decimal_units(file_size)}')
+                _logger.debug(f'> {i:4d} fetch time, size: {fetch_time:.2f}s, {to_decimal_units(file_size)}')
             else:
-                _logger.error(f'> {id:4d} HTTP code:  {rsp_status}')
+                _logger.error(f'> {i:4d} HTTP code:  {rsp_status}')
                 if record.filepath.exists():
                     record.filepath.unlink()
-                    _logger.debug(f'> {id:4d} deleting:   "{rel_path}"')
+                    _logger.debug(f'> {i:4d} deleting:   "{rel_path}"')
                     record.outcome = Outcome.deleted
         except Exception as ex:
-            _logger.exception(f'> {id:4d} generic exception')
+            _logger.exception(f'> {i:4d} generic exception')
 
     # _____________________________________________________________________________
-    def __get_response(self, url: str, filepath: Path, id: int):
+    def __get_response(self, url: str, filepath: Path, i: int):
         # Must call release_conn() after file copied but opening/writing exception is possible
         rsp = None
         fetch_time = timedelta()
@@ -102,22 +106,22 @@ class FetchFiles(object):
             redirect_count = 3
             start_time = time.time()
             rsp = self.url_client.request('GET', url, preload_content=False)
-            _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+            _logger.debug(f'> {i:4d} resp code:  {rsp.status}')
             while rsp.status in HTTPResponse.REDIRECT_STATUSES and redirect_count > 0:
                 if location := rsp.headers.get('location', None):
-                    _logger.debug(f'> {id:4d} redirct:      {url} --> {location}')
+                    _logger.debug(f'> {i:4d} redirct:      {url} --> {location}')
                     url = location
                     rsp.release_conn()
                     rsp = self.url_client.request('GET', location, preload_content=False)
                 else:
                     raise RuntimeError('Response header "location" not found')
             if rsp.status == 200:
-                _logger.debug(f'> {id:4d} write:      "{filepath.name}"')
+                _logger.debug(f'> {i:4d} write:      "{filepath.name}"')
                 with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
                     shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
             fetch_time = time.time() - start_time
         except exceptions.HTTPError as ex:
-            _logger.exception(f'> {id:4d} HTTP error')
+            _logger.exception(f'> {i:4d} HTTP error')
         except Exception as ex:
             _logger.exception('Unexpected')
             raise ex
@@ -128,29 +132,29 @@ class FetchFiles(object):
         return rsp.status, fetch_time
 
     # _____________________________________________________________________________
-    def __stream_response(self, url: str, filepath: Path, id: int):
+    def __stream_response(self, url: str, filepath: Path, i: int):
         # Must call release_conn() after file copied but opening/writing exception is possible
         rsp = None
         start_time, fetch_time = time.time(), timedelta()
         try:
             rsp = self.url_client.request('GET', url, preload_content=False)
-            _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+            _logger.debug(f'> {i:4d} resp code:  {rsp.status}')
             while rsp.status in HTTPResponse.REDIRECT_STATUSES:
                 if location := rsp.headers.get('location', None):
-                    _logger.debug(f'> {id:4d} redirct:      "{url} --> {location}')
+                    _logger.debug(f'> {i:4d} redirct:      "{url} --> {location}')
                     url = location
                     rsp.release_conn()
                     rsp = self.url_client.request('GET', url, preload_content=False)
-                    _logger.debug(f'> {id:4d} resp code:  {rsp.status}')
+                    _logger.debug(f'> {i:4d} resp code:  {rsp.status}')
                 else:
                     raise RuntimeError('Response header "location" not found')
             if rsp.status == 200:
-                _logger.debug(f'> {id:4d} write:      "{filepath.name}"')
+                _logger.debug(f'> {i:4d} write:      "{filepath.name}"')
                 with filepath.open('wb', buffering=_BUFFER_SIZE) as rfp:
                     shutil.copyfileobj(rsp, rfp, length=_BUFFER_SIZE)
             fetch_time = time.time() - start_time
         except exceptions.HTTPError as ex:
-            _logger.exception(f'> {id:4d} HTTP error')
+            _logger.exception(f'> {i:4d} HTTP error')
         finally:
             if rsp:
                 rsp.release_conn()
