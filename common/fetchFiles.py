@@ -25,7 +25,7 @@ class FetchFiles(object):
         _logger.debug('__init__')
         self._app_config = app_config
 
-        url_headers = make_headers(keep_alive=True, accept_encoding='gzip, deflate, br')
+        url_headers = make_headers(keep_alive=True, accept_encoding=True)
         url_retries = Retry(total=4, backoff_factor=3, status_forcelist=[500, 502, 503, 504])
         self.url_client = PoolManager(timeout=Timeout(total=15.0), retries=url_retries, block=True, headers=url_headers)
 
