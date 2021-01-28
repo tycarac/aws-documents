@@ -26,12 +26,12 @@ class FetchFiles(object):
         self._app_config = app_config
 
         url_headers = make_headers(keep_alive=True, accept_encoding=True)
-        url_retries = Retry(total=4, backoff_factor=3, status_forcelist=[500, 502, 503, 504])
+        url_retries = Retry(total=4, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
         self.url_client = PoolManager(timeout=Timeout(total=15.0), retries=url_retries, block=True, headers=url_headers)
 
     # _____________________________________________________________________________
     def __fetch_records(self, records: List[FetchItem]):
-        _logger.debug('__fetch')
+        _logger.debug(f'__fetch {len(records)} records')
 
         record_docs = list(filter(lambda r: r.to_download, records))
         with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
@@ -41,19 +41,17 @@ class FetchFiles(object):
 
     # _____________________________________________________________________________
     def __fetch_record(self, record: FetchItem, i: int):
-        try:
-            _logger.debug(f'> {i:4d} __fetch_item')
-            record.result = Result.error
-            record.outcome = Outcome.nil
+        is_file_exists = record.filepath.exists()
+        _logger.debug(f'> {i:4d} exists:    {str(is_file_exists):<5s}: "{record.filename}"')
 
-            # Check file exists and, if so, if old
-            is_file_exists = record.filepath.exists()
-            _logger.debug(f'> {i:4d} exists:    {str(is_file_exists):<5s}: "{record.filename}"')
+        record.result = Result.error
+        record.outcome = Outcome.nil
+        try:
             if is_file_exists:
                 # Check file age
                 local_date = datetime.date(datetime.fromtimestamp(record.filepath.stat().st_ctime, local_tz))
                 remote_date = record.dateRemote
-                _logger.debug(f'> {i:4d} date:       local, remote: {local_date}, {remote_date}')
+                _logger.debug(f'> {i:4d} date:      local, remote: {local_date}, {remote_date}')
                 if local_date >= remote_date:
                     record.result, record.outcome = Result.success, Outcome.cached
                     _logger.debug(f'> {i:4d} cached:    "{record.filepath.name}"')
@@ -67,14 +65,12 @@ class FetchFiles(object):
 
     # _____________________________________________________________________________
     def __fetch_file(self, record: FetchItem, is_file_exists: bool, i: int):
-        _logger.debug(f'> {i:4d} __fetch_file')
+        downloads_path = self._app_config.downloads_path
+        rel_path = record.filepath.relative_to(downloads_path)
+        _logger.info(f'> {i:4d} fetching:  "{rel_path.name}" --> "{rel_path.parent}"')
+        _logger.debug(f'> {i:4d} GET:       {record.url}')
 
         try:
-            downloads_path = self._app_config.downloads_path
-            rel_path = record.filepath.relative_to(downloads_path)
-            _logger.info(f'> {i:4d} fetching:   "{rel_path.name}" --> "{rel_path.parent}"')
-            _logger.debug(f'> {i:4d} GET:       {record.url}')
-
             rsp_status, fetch_time = self.__stream_response(record.url, record.filepath, i)
             if rsp_status == 200:
                 record.result = Result.success
