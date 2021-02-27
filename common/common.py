@@ -55,7 +55,7 @@ class FetchItem(ABC):
         """Return list of the instance attribute values.
         """
         return [self.title, self.dateRemote, self.filename, self.filepath, self.url, self.to_download,
-                    self.outcome.name, self.result.name]
+                self.outcome.name, self.result.name]
 
     # _____________________________________________________________________________
     @staticmethod
@@ -65,7 +65,7 @@ class FetchItem(ABC):
          the dataclass for field types, the function is manually synchronized (similar to __slots__).
         """
         return FetchItem(s[0], date.fromisoformat(s[1]), s[2], Path(s[3]), s[4], str_to_bool(s[5]),
-                    Outcome[s[6]], Result[s[7]])
+                         Outcome[s[6]], Result[s[7]])
 
 
 # _____________________________________________________________________________
@@ -100,4 +100,3 @@ def initialize_logger(app_path: Path, start_datetime: datetime = None):
 # _____________________________________________________________________________
 def str_to_bool(s: Union[str, bool]) -> bool:
     return s if type(s) is bool else s.lower() in ('true', 't', 'yes', '1')
-
