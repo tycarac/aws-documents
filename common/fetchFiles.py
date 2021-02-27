@@ -15,6 +15,7 @@ from whitepapers.whitepaperTypes import FetchItem, Outcome, Result
 
 _logger = logging.getLogger(__name__)
 _BUFFER_SIZE = 1024 * 1024   # buffer for downloading remote resource
+_HTTP_CODE_BAD_REQUEST = 400
 
 
 # _____________________________________________________________________________
@@ -125,7 +126,7 @@ class FetchFiles(object):
             if rsp:
                 rsp.release_conn()
 
-        return rsp.status, fetch_time
+        return rsp.status if rsp else _HTTP_CODE_BAD_REQUEST, fetch_time
 
     # _____________________________________________________________________________
     def __stream_response(self, url: str, filepath: Path, i: int):
@@ -155,7 +156,7 @@ class FetchFiles(object):
             if rsp:
                 rsp.release_conn()
 
-        return rsp.status, fetch_time
+        return rsp.status if rsp else _HTTP_CODE_BAD_REQUEST, fetch_time
 
     # _____________________________________________________________________________
     def process(self, records):
