@@ -1,4 +1,4 @@
-python-dateutil
+dateparser
 pytz
 tzlocal
 urllib3[secure]
