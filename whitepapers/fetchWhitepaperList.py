@@ -1,5 +1,5 @@
 from datetime import datetime
-import dateparser
+from dateutil import parser
 import logging
 from pathlib import Path
 import re
@@ -33,11 +33,11 @@ class FetchWhitepaperList(FetchList):
         primary_url = adfields['primaryURL'].split('?')[0]
 
         # Derive date from datetime (not raw from JSON data file)
-        date_created = datetime.date(dateparser.parse(item['dateCreated']))
+        date_created = datetime.date(parser.parse(item['dateCreated']))
         date_update_value = adfields.get('updateDate', None)
-        date_updated = datetime.date(dateparser.parse(date_update_value)) if date_update_value else None
-        date_published = datetime.date(dateparser.parse(adfields['datePublished']))
-        date_sort = datetime.date(dateparser.parse(adfields['sortDate']))
+        date_updated = datetime.date(parser.parse(date_update_value)) if date_update_value else None
+        date_published = datetime.date(parser.parse(adfields['datePublished']))
+        date_sort = datetime.date(parser.parse(adfields['sortDate']))
 
         # Extract text up to HTML tag from "description" and normalize whitespacing
         desc = m.group(1) if (m := _desc_re.search(adfields['description'])) else ''

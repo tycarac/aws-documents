@@ -1,5 +1,5 @@
 from datetime import datetime
-import dateparser
+from dateutil import parser
 import logging
 from pathlib import Path
 import re
@@ -38,10 +38,10 @@ class FetchAnswersList(FetchList):
         description = ' '.join(desc.split())
 
         # Derive date from datetime (not raw from JSON data file)
-        date_created = datetime.date(dateparser.parse(item['dateCreated']))
+        date_created = datetime.date(parser.parse(item['dateCreated']))
         date_update_value = item.get('dateUpdated', None)
-        date_updated = datetime.date(dateparser.parse(date_update_value)) if date_update_value else None
-        date_sort = datetime.date(dateparser.parse(adfields['sortDate']))
+        date_updated = datetime.date(parser.parse(date_update_value)) if date_update_value else None
+        date_sort = datetime.date(parser.parse(adfields['sortDate']))
 
         # Extract paths
         url = adfields.get('downloadUrl', '').split('?')[0]
@@ -57,3 +57,4 @@ class FetchAnswersList(FetchList):
 
         _logger.debug(f'build_record "{record.title}"')
         return record
+

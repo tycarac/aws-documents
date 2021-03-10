@@ -7,7 +7,7 @@ Downloads AWS documents, currently whitepapers, from AWS documentation website.
 
 Requires Python 3.8.x and libraries:
 - urllib3
-- dateparser
+- python-dateutil
 - pytz
 - tzlocal
 
@@ -29,3 +29,5 @@ Run by activating venv environment and running module whitepapers as follows:
      - Do not contain date related metadata (may be available in custom fields at author's discretion)
 
 Thus dateSort is used for the date to test if a cached whitepaper is "old" and should be re-downloaded.  It is also used to build the whitepaper file name.
+
+

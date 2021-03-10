@@ -1,5 +1,5 @@
 from datetime import datetime
-import dateparser
+from dateutil import parser
 import logging
 from pathlib import Path
 import re
@@ -35,9 +35,9 @@ class FetchBuildersList(FetchList):
         description = ' '.join(desc.split())
 
         # Derive date from datetime (not raw from JSON data file)
-        date_created = datetime.date(dateparser.parse(item['dateCreated']))
+        date_created = datetime.date(parser.parse(item['dateCreated']))
         date_update_value = adfields.get('updateDate', None)
-        date_updated = datetime.date(dateparser.parse(date_update_value)) if date_update_value else None
+        date_updated = datetime.date(parser.parse(date_update_value)) if date_update_value else None
 
         # Extract paths
         filename_date = date_updated if date_updated else date_created
