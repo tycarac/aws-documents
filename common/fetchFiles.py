@@ -35,7 +35,7 @@ class FetchFiles(object):
         _logger.debug(f'__fetch {len(records)} records')
 
         record_docs = list(filter(lambda r: r.to_download, records))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
             future_entries = {executor.submit(self.__fetch_record, rec, i) for i, rec in enumerate(record_docs, 1)}
             for future in concurrent.futures.as_completed(future_entries):
                 record, i = future.result()
