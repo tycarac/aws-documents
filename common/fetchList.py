@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, date
+
 from dataclasses import dataclass
+from datetime import date, datetime, timezone
 import logging
 import json
 from pathlib import Path
-import pytz
 import time
 from typing import List, Any, Mapping
 from urllib import parse
@@ -111,8 +111,9 @@ class FetchList(ABC):
             fields['page'] = page_num
 
         # Write summary file
-        now_dt = datetime.utcnow()
-        summary = f'{{"written":{{"utc":"{pytz.UTC.localize(now_dt)}","local":"{local_tz.localize(now_dt)}"}}' \
+        utc_dt = datetime.now(timezone.utc)
+        now_dt = utc_dt.astimezone(tz=local_tz)
+        summary = f'{{"written":{{"local":"{now_dt:%Y-%m-%d %H:%H:%S}","utc":"{utc_dt:%Y-%m-%d %H:%H:%S}"}}' \
                 f',"count":"{hits_count}","pages":"{len(cache_files)}"}}'
         summary_filepath = self._app_config.summary_file_path
         summary_filepath.write_text(json.dumps(json.loads(summary), indent=2))
@@ -121,6 +122,8 @@ class FetchList(ABC):
         # Remove superfluous cache files
         cache_path = self._app_config.cache_path
         deleted_files = [p.unlink() for p in cache_path.glob('*.*') if p not in cache_files]
+        if deleted_files:
+            _logger.debug(f'> Deleted {len(deleted_files)} unwanted cached files')
 
         return list_pages
 

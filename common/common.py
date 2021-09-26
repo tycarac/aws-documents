@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from datetime import date
-import logging.config, logging.handlers
+import logging
 import os
 from pathlib import Path
 import time
@@ -81,9 +81,10 @@ class DeleteRecord:
 
 
 # _____________________________________________________________________________
-def initialize_logger(app_path: Path, start_datetime: datetime = None):
-    if not start_datetime:
-        start_datetime = datetime.fromtimestamp(time.time())
+def initialize_logger(app_path: Path, start_dt: datetime = None):
+    if not start_dt:
+        start_dt = datetime.fromtimestamp(time.time())
+    start_utc_dt = start_dt.astimezone(tz=timezone.utc)
 
     # Load log configuration
     logger_config_path = app_path.with_suffix('.logging.json')
@@ -92,7 +93,8 @@ def initialize_logger(app_path: Path, start_datetime: datetime = None):
         logging.captureWarnings(True)
         logging.config.dictConfig(json.loads(p.read_text()))
 
-    _logger.info(f'Now: {start_datetime.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
+    _logger.info(f'Now: {start_dt.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
+    _logger.info(f'UTC: {start_utc_dt.strftime("%a  %d-%b-%y  %I:%M:%S %p")}')
     _logger.debug(f'Config file: "{logger_config_path}"')
     _logger.debug(f'CPU count: {os.cpu_count()}')
 
